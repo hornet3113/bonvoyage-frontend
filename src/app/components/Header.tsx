@@ -1,5 +1,9 @@
+"use client";
+
 import React from "react";
 import { motion } from "motion/react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { IoIosGlobe } from "react-icons/io";
 import { IoSearchOutline } from "react-icons/io5";
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
@@ -16,7 +20,7 @@ type Props = {
 };
 
 function Header({ variant = "dark", onSearch }: Props) {
-    const [active, setActive] = React.useState(0);
+    const pathname = usePathname();
     const [query, setQuery] = React.useState("");
     const [loading, setLoading] = React.useState(false);
 
@@ -45,9 +49,9 @@ function Header({ variant = "dark", onSearch }: Props) {
 
     const textClass = isLight ? "text-gray-700" : "text-white";
     const menuHoverClass = isLight
-        ? "border-b-yellow-500 transition duration-300 ease-in-out hover:border-b-2 hover:text-gray-900"
-        : "border-b-yellow-500 transition duration-300 ease-in-out hover:border-b-2 hover:text-white";
-    const activeBorderClass = isLight ? "border-b-2 border-b-yellow-500 text-gray-900" : "border-b-2 border-b-yellow-500";
+        ? "border-b-blue-500 transition duration-300 ease-in-out hover:border-b-2 hover:text-gray-900"
+        : "border-b-blue-500 transition duration-300 ease-in-out hover:border-b-2 hover:text-white";
+    const activeBorderClass = isLight ? "border-b-2 border-b-blue-500 text-gray-900" : "border-b-2 border-b-blue-500";
 
     return (
         <div className={containerClass}>
@@ -56,14 +60,13 @@ function Header({ variant = "dark", onSearch }: Props) {
                 Bon Voyage
             </div>
             <ul className={`flex flex-wrap items-center gap-3 text-[11px] md:gap-10 ${textClass}`}>
-                {menus.map((menu, index) => (
+                {menus.map(({ label, href }) => (
                     <motion.li
                         layout
-                        key={index}
-                        onClick={() => setActive(index)}
-                        className={`${active === index ? activeBorderClass : ""} inline-block cursor-pointer ${menuHoverClass}`}
+                        key={href}
+                        className={`${pathname === href ? activeBorderClass : ""} inline-block cursor-pointer ${menuHoverClass}`}
                     >
-                        {menu}
+                        <Link href={href}>{label}</Link>
                     </motion.li>
                 ))}
 
@@ -74,7 +77,7 @@ function Header({ variant = "dark", onSearch }: Props) {
                                 type="text"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Buscar lugar..."
+                                placeholder="¿A dónde vas a viajar?"
                                 className={`bg-transparent outline-none text-[11px] uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal w-32 md:w-44 ${isLight ? "placeholder:text-gray-400 text-gray-700" : "placeholder:text-white/50 text-white"}`}
                             />
                             <button type="submit" disabled={loading} className={`${isLight ? "text-gray-500 hover:text-gray-800" : "text-white/70 hover:text-white"} transition-colors`}>
@@ -109,9 +112,9 @@ function Header({ variant = "dark", onSearch }: Props) {
 export default Header;
 
 const menus = [
-    "Home",
-    "Sobre Nosotros",
-    "Destinos",
-    "Blog",
-    "DiscoveryMap",
+    { label: "Home",          href: "/"             },
+    { label: "Sobre Nosotros",href: "/about"        },
+    { label: "Destinos",      href: "/destinations" },
+    { label: "Blog",          href: "/blog"         },
+    { label: "DiscoveryMap",  href: "/dashboard"    },
 ];
