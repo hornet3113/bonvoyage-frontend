@@ -70,7 +70,9 @@ async function resolveLocation(query: string, token: string) {
   );
   if (!res.ok) throw new Error(`No se encontró "${query}"`);
   const data = await res.json();
-  const places: any[] = data?.data ?? [];
+  // handle both array and nested-object responses
+  const raw = data?.data ?? data?.places ?? data?.results ?? data;
+  const places: any[] = Array.isArray(raw) ? raw : Object.values(raw ?? {});
   // prefer city-type results; fall back to first match
   const match =
     places.find((p: any) =>
