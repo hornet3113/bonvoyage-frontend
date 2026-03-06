@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { useAuth } from "@clerk/nextjs";
 import {
   IoBed,
   IoSearch,
@@ -32,7 +33,7 @@ type Destination = {
   photoUrl: string | null;
 };
 
-// Adapter so POIMap can consume hotel data
+
 function toMapPlace(hotel: Hotel, index: number) {
   return {
     id: hotel.id ?? `hotel-${index}`,
@@ -52,6 +53,7 @@ function tomorrow() {
 }
 
 export default function HotelsSection({ destination }: { destination: Destination }) {
+  const { getToken } = useAuth();
   const [checkIn, setCheckIn] = useState(today());
   const [checkOut, setCheckOut] = useState(tomorrow());
   const [adults, setAdults] = useState(1);
@@ -71,8 +73,21 @@ export default function HotelsSection({ destination }: { destination: Destinatio
     setSelectedId(null);
 
     try {
+      const token = await getToken();
+
+     
+      const destRes = await fetch(
+        `https://bonvoyage-backend.vercel.app/api/destinations/search?query=${encodeURIComponent(destination.name)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (!destRes.ok) throw new Error("No se pudo resolver el destino");
+      const locations = await destRes.json();
+      const match = locations.find((l: { type: string }) => l.type === "CITY") ?? locations[0];
+      if (!match) throw new Error("Destino no encontrado");
+
+ 
       const params = new URLSearchParams({
-        destination: destination.name,
+        destination: match.entityId,
         checkin: checkIn,
         checkout: checkOut,
         adults: adults.toString(),
@@ -80,7 +95,10 @@ export default function HotelsSection({ destination }: { destination: Destinatio
         currency: "USD",
       });
 
-      const res = await fetch(`/api/hotels/search?${params}`);
+      const res = await fetch(
+        `https://bonvoyage-backend.vercel.app/api/hotels/search?${params}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
