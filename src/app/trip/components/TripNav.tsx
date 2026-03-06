@@ -1,7 +1,7 @@
 "use client";
 
 import { TripSection } from "../page";
-import { IoAirplane, IoBed, IoCompass, IoRestaurant } from "react-icons/io5";
+import { IoAirplane, IoBed, IoCompass, IoRestaurant, IoCalendar } from "react-icons/io5";
 
 type Tab = {
   id: TripSection;
@@ -14,6 +14,7 @@ const tabs: Tab[] = [
   { id: "hospedaje",    label: "Hospedajes",        icon: <IoBed className="text-xl" /> },
   { id: "puntos",       label: "Puntos de interés", icon: <IoCompass className="text-xl" /> },
   { id: "restaurantes", label: "Restaurantes",      icon: <IoRestaurant className="text-xl" /> },
+  { id: "itinerario",   label: "Itinerario",        icon: <IoCalendar className="text-xl" /> },
 ];
 
 type Props = {
