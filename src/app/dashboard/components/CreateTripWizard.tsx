@@ -98,7 +98,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
 
-        {/* Destination header */}
+       
         <div className="relative">
           {place.photoUrl ? (
             <div className="h-36 overflow-hidden">
@@ -120,7 +120,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
           </div>
         </div>
 
-        {/* Step progress bar */}
+       
         <div className="flex gap-1.5 px-6 pt-4">
           {[1, 2, 3].map((s) => (
             <div
@@ -132,7 +132,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
 
         <div className="px-6 py-5">
 
-          {/* Step 1 — Intro */}
+        
           {step === 1 && (
             <div className="space-y-4">
               <div>
@@ -150,7 +150,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
             </div>
           )}
 
-          {/* Step 2 — Flight info */}
+          
           {step === 2 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -250,7 +250,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
             </div>
           )}
 
-          {/* Step 3 — Trip details */}
+          
           {step === 3 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
