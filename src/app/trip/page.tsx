@@ -56,7 +56,6 @@ function TripPageContent() {
       const data = await res.json();
 
       // Map backend response to our DayPlan shape
-      // Adjust field names here if the actual API differs
       const days: DayPlan[] = (data.days ?? []).map((d: {
         day_id: string;
         day_number: number;
@@ -65,16 +64,16 @@ function TripPageContent() {
         items?: Array<{
           item_id: string;
           item_type?: string;
-          // fields from place_references JOIN (added by backend team)
           place_reference_id?: string;
-          name?: string;
-          address?: string;
-          latitude?: number;
-          longitude?: number;
-          photo_url?: string;
-          category?: string;
-          rating?: number | null;
-          price_level?: string | null;
+          // fields from place_references JOIN (place_ prefix)
+          place_name?: string;
+          place_address?: string;
+          place_latitude?: number;
+          place_longitude?: number;
+          place_photo_url?: string;
+          place_category?: string;
+          place_rating?: number | null;
+          place_price_level?: string | null;
           estimated_cost?: number | null;
           notes?: string | null;
         } | null>;
@@ -88,17 +87,17 @@ function TripPageContent() {
             itemId: item.item_id,
             id: item.place_reference_id ?? item.item_id,
             type: (
-              item.category === "HOTEL" ? "hotel"
-              : item.category === "RESTAURANT" ? "restaurant"
+              item.place_category === "HOTEL" ? "hotel"
+              : item.place_category === "RESTAURANT" ? "restaurant"
               : "poi"
             ) as "poi" | "restaurant" | "hotel",
-            name: item.name ?? "",
-            address: item.address ?? "",
-            lat: item.latitude ?? 0,
-            lng: item.longitude ?? 0,
-            photoUrl: item.photo_url ?? null,
-            rating: item.rating ?? null,
-            priceLevel: item.price_level ?? null,
+            name: item.place_name ?? "",
+            address: item.place_address ?? "",
+            lat: item.place_latitude ?? 0,
+            lng: item.place_longitude ?? 0,
+            photoUrl: item.place_photo_url ?? null,
+            rating: item.place_rating ?? null,
+            priceLevel: item.place_price_level ?? null,
           })),
       }));
 
@@ -119,7 +118,7 @@ function TripPageContent() {
     if (!day) return;
     if (day.items.some((i) => i.id === item.id)) return; // already added
 
-    // Optimistic update — always show in UI regardless of backend result
+    // Optimistic update — show immediately in UI
     const tempId = crypto.randomUUID();
     setItinerary((prev) => ({
       ...prev,
@@ -130,10 +129,44 @@ function TripPageContent() {
       ),
     }));
 
-    // TODO: call backend once it exposes a save endpoint for POIs/restaurants
-    // that returns a place_reference_id UUID, then call:
-    // POST /api/trips/${tripId}/days/${day.dayId}/items
-    // body: { item_type: 'PLACE', place_reference_id: <uuid> }
+    try {
+      const token = await getToken();
+
+      const categoryMap: Record<string, string> = {
+        poi: "POI",
+        restaurant: "RESTAURANT",
+        hotel: "HOTEL",
+      };
+
+      // 1. Save/upsert place reference → get reference_id
+      const saveRes = await fetch(`${BACKEND}/api/places/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          external_id: item.id,
+          category: categoryMap[item.type] ?? "POI",
+          name: item.name,
+          latitude: item.lat,
+          longitude: item.lng,
+          rating: item.rating ?? null,
+          photo_url: item.photoUrl ?? null,
+          address: item.address ?? null,
+          price_level: item.priceLevel ?? null,
+        }),
+      });
+      if (!saveRes.ok) return; // keep optimistic item shown
+
+      const { reference_id } = await saveRes.json();
+
+      // 2. Add item to the itinerary day
+      await fetch(`${BACKEND}/api/trips/${tripId}/days/${day.dayId}/items`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ item_type: "PLACE", place_reference_id: reference_id }),
+      });
+    } catch {
+      // silent — optimistic item stays visible
+    }
   }
 
   async function removeFromItinerary(itemId: string, dayNumber: number) {
