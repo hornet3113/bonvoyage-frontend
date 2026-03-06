@@ -50,20 +50,12 @@ export default function CreateTripWizard({ place, onClose }: Props) {
     try {
       const token = await getToken();
 
-      // Step 1: resolve destination_id from backend
-      const searchParams = new URLSearchParams({ name: place.name });
-      const destRes = await fetch(`${BACKEND}/api/destinations/search?${searchParams}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!destRes.ok) throw new Error("No se pudo encontrar el destino");
-      const destData = await destRes.json();
-      const destinationId = destData.destination_id ?? destData.id ?? destData.destinationId;
-      if (!destinationId) throw new Error("Destino no encontrado");
-
-      // Step 2: create trip
       const body: Record<string, unknown> = {
         trip_name: tripName,
-        destination_id: destinationId,
+        destination_name: place.name,
+        destination_country: place.country,
+        latitude: place.lat,
+        longitude: place.lng,
         start_date: departDate,
         end_date: returnDate,
         currency,
