@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
 import { IoStar, IoLocationSharp, IoCompass, IoPricetag, IoSearch, IoAdd, IoCheckmark, IoCalendarOutline } from "react-icons/io5";
-import type { ItineraryItem } from "../types";
+import type { ItineraryItem, TripDay } from "../types";
 
 const POIMap = dynamic(() => import("./POIMap"), { ssr: false });
 
@@ -31,13 +31,17 @@ type Destination = {
 
 type Props = {
   destination: Destination;
+  tripDays?: TripDay[];
   onAddToItinerary: (item: ItineraryItem, dayNumber: number) => void;
 };
 
 const BACKEND = "https://bonvoyage-backend.vercel.app";
 
-export default function PointsOfInterestSection({ destination, onAddToItinerary }: Props) {
+export default function PointsOfInterestSection({ destination, tripDays, onAddToItinerary }: Props) {
   const { getToken } = useAuth();
+  const days: TripDay[] = tripDays && tripDays.length > 0
+    ? tripDays
+    : [1, 2, 3, 4, 5, 6, 7].map((n) => ({ dayId: `day-${n}`, dayNumber: n, date: "" }));
   const [places, setPlaces] = useState<POI[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -145,6 +149,7 @@ export default function PointsOfInterestSection({ destination, onAddToItinerary 
                 <POICard
                   key={poi.id}
                   poi={poi}
+                  days={days}
                   selected={selectedId === poi.id}
                   added={addedIds.has(poi.id)}
                   pickerOpen={pickerOpenId === poi.id}
@@ -244,13 +249,13 @@ export default function PointsOfInterestSection({ destination, onAddToItinerary 
                         Selecciona el día
                       </p>
                       <div className="grid grid-cols-4 gap-1">
-                        {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+                        {days.map((d) => (
                           <button
-                            key={day}
-                            onClick={() => handleAddToDay(selectedPlace, day)}
+                            key={d.dayId}
+                            onClick={() => handleAddToDay(selectedPlace, d.dayNumber)}
                             className="text-xs font-medium text-gray-700 hover:bg-blue-500 hover:text-white rounded-lg py-1.5 transition-colors bg-white border border-gray-200"
                           >
-                            {day}
+                            {d.dayNumber}
                           </button>
                         ))}
                       </div>
@@ -281,6 +286,7 @@ export default function PointsOfInterestSection({ destination, onAddToItinerary 
 
 function POICard({
   poi,
+  days,
   selected,
   added,
   pickerOpen,
@@ -289,6 +295,7 @@ function POICard({
   onAddToDay,
 }: {
   poi: POI;
+  days: TripDay[];
   selected: boolean;
   added: boolean;
   pickerOpen: boolean;
@@ -328,13 +335,13 @@ function POICard({
             Agregar al día
           </p>
           <div className="grid grid-cols-4 gap-1">
-            {[1, 2, 3, 4, 5, 6, 7].map((day) => (
+            {days.map((d) => (
               <button
-                key={day}
-                onClick={() => onAddToDay(day)}
+                key={d.dayId}
+                onClick={() => onAddToDay(d.dayNumber)}
                 className="text-[11px] font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg py-1 transition-colors"
               >
-                {day}
+                {d.dayNumber}
               </button>
             ))}
           </div>

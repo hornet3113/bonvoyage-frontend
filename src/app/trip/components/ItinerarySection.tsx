@@ -42,7 +42,16 @@ export default function ItinerarySection({ itinerary, onRemove }: Props) {
             <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
               {day.dayNumber}
             </div>
-            <h2 className="text-base font-semibold text-gray-700">Día {day.dayNumber}</h2>
+            <div>
+              <h2 className="text-base font-semibold text-gray-700">Día {day.dayNumber}</h2>
+              {day.date && (
+                <p className="text-xs text-gray-400">
+                  {new Date(day.date + "T00:00:00").toLocaleDateString("es-MX", {
+                    weekday: "short", day: "numeric", month: "short",
+                  })}
+                </p>
+              )}
+            </div>
             <div className="flex-1 h-px bg-gray-100" />
             <span className="text-xs text-gray-400">
               {day.items.length} actividad{day.items.length !== 1 ? "es" : ""}
@@ -52,9 +61,9 @@ export default function ItinerarySection({ itinerary, onRemove }: Props) {
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 pl-11">
             {day.items.map((item) => (
               <ItineraryCard
-                key={item.id}
+                key={item.itemId ?? item.id}
                 item={item}
-                onRemove={() => onRemove(item.id, day.dayNumber)}
+                onRemove={() => onRemove(item.itemId ?? item.id, day.dayNumber)}
               />
             ))}
           </div>

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { IoLocationSharp, IoClose } from "react-icons/io5";
 
 type SelectedPlace = {
@@ -8,29 +7,18 @@ type SelectedPlace = {
   lng: number;
   lat: number;
   photoUrl: string | null;
-    country: string;        
-  fullName: string; 
+  country: string;
+  fullName: string;
 };
 
 type Props = {
   place: SelectedPlace;
   onSave: (place: SelectedPlace) => void;
   onCancel: () => void;
+  onCreateTrip: () => void;
 };
 
-export default function DestinationCard({ place, onSave, onCancel }: Props) {
-  const router = useRouter();
-
-  function handleCreateTrip() {
-    const params = new URLSearchParams({
-      name: place.name,
-      country: place.country,
-      lat: place.lat.toString(),
-      lng: place.lng.toString(),
-      ...(place.photoUrl ? { photoUrl: place.photoUrl } : {}),
-    });
-    router.push(`/trip?${params.toString()}`);
-  }
+export default function DestinationCard({ place, onSave, onCancel, onCreateTrip }: Props) {
 
   return (
     <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm bg-white shadow-2xl border border-gray-100 overflow-hidden rounded-2xl">
@@ -72,7 +60,7 @@ export default function DestinationCard({ place, onSave, onCancel }: Props) {
             Cancelar
           </button>
           <button
-            onClick={handleCreateTrip}
+            onClick={onCreateTrip}
             className="flex-1 py-2 rounded-lg bg-blue-400 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
           >
             Crear viaje

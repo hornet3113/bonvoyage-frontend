@@ -43,7 +43,14 @@ type Destination = {
   photoUrl: string | null;
 };
 
-type Props = { destination: Destination };
+type Props = {
+  destination: Destination;
+  defaultOrigin?: string;
+  defaultDepartDate?: string;
+  defaultReturnDate?: string;
+  defaultPassengers?: number;
+  defaultCabinClass?: string;
+};
 
 function formatDuration(min: number | null) {
   if (!min) return "";
@@ -69,17 +76,24 @@ async function resolveLocation(query: string, token: string) {
   return { skyId: match.skyId, entityId: match.entityId };
 }
 
-export default function FlightsSection({ destination }: Props) {
+export default function FlightsSection({
+  destination,
+  defaultOrigin = "",
+  defaultDepartDate = "",
+  defaultReturnDate = "",
+  defaultPassengers = 1,
+  defaultCabinClass = "economy",
+}: Props) {
   const { getToken } = useAuth();
   const [tripType, setTripType] = useState<TripType>("ida-vuelta");
-  const [origin, setOrigin] = useState("");
+  const [origin, setOrigin] = useState(defaultOrigin);
   const [dest, setDest] = useState(
     destination.country ? `${destination.name}, ${destination.country}` : destination.name
   );
-  const [departDate, setDepartDate] = useState("");
-  const [returnDate, setReturnDate] = useState("");
-  const [passengers, setPassengers] = useState(1);
-  const [cabinClass, setCabinClass] = useState("economy");
+  const [departDate, setDepartDate] = useState(defaultDepartDate);
+  const [returnDate, setReturnDate] = useState(defaultReturnDate);
+  const [passengers, setPassengers] = useState(defaultPassengers);
+  const [cabinClass, setCabinClass] = useState(defaultCabinClass);
 
   const [vuelos, setVuelos] = useState<Vuelo[]>([]);
   const [loading, setLoading] = useState(false);

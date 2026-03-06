@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Header from "@/app/components/Header";
 import DestinationCard from "./components/DestinationCard";
+import CreateTripWizard from "./components/CreateTripWizard";
 
 const MapView = dynamic(() => import("./components/MapView"), { ssr: false });
 
@@ -19,6 +20,7 @@ type SelectedPlace = {
 export default function DashboardPage() {
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null);
   const [flyTo, setFlyTo] = useState<{ lng: number; lat: number } | null>(null);
+  const [wizardPlace, setWizardPlace] = useState<SelectedPlace | null>(null);
 
   const handleSearch = useCallback(async (result: { name: string; lng: number; lat: number }) => {
     setFlyTo({ lng: result.lng, lat: result.lat });
@@ -32,14 +34,21 @@ export default function DashboardPage() {
       <Header variant="light" onSearch={handleSearch} />
       <div className="relative flex-1">
         <MapView onPlaceSelect={setSelectedPlace} flyTo={flyTo} />
-        {selectedPlace && (
+        {selectedPlace && !wizardPlace && (
           <DestinationCard
             place={selectedPlace}
             onSave={() => setSelectedPlace(null)}
             onCancel={() => setSelectedPlace(null)}
+            onCreateTrip={() => { setWizardPlace(selectedPlace); setSelectedPlace(null); }}
           />
         )}
       </div>
+      {wizardPlace && (
+        <CreateTripWizard
+          place={wizardPlace}
+          onClose={() => setWizardPlace(null)}
+        />
+      )}
     </div>
   );
 }
