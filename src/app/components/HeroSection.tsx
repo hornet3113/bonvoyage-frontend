@@ -24,7 +24,7 @@ export default function HeroSection() {
 
                     <div className="flex flex-wrap items-center justify-center gap-4">
                         <Link href="/dashboard">
-                            <button className="rounded-full bg-yellow-500 px-8 py-3 text-sm font-medium text-black transition duration-300 ease-in-out hover:opacity-80">
+                            <button className="rounded-full px-8 py-3 text-sm font-medium text-white transition duration-300 ease-in-out hover:opacity-80" style={{ backgroundColor: "#1e90ff" }}>
                                 Crear viaje
                             </button>
                         </Link>
