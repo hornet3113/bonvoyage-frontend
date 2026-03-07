@@ -7,6 +7,7 @@ import BackgroundImage from "@/app/components/BackgroundImage";
 import Slides from "@/app/components/Slides";
 import SlideInfo from "@/app/components/SlideInfo";
 import Controls from "@/app/components/Controls";
+import HeroSection from "@/app/components/HeroSection";
 
 
 
@@ -34,46 +35,44 @@ export default function Home() {
   });
 
   return(
-    <main className={`${inter.className} relative h-screen select-none overflow-hidden bg-black text-white antialiased`}>
-      <AnimatePresence>
-        <BackgroundImage
-        key="background"
-        transitionData={transitionData}
-        currentSlideData={currentSlideData}/>
-        <div key="content" className="absolute top-0 left-0 z-20 h-full w-full">
-          {/*todo esto esel header section*/}
-          <Header />
-          {/*aqui llamo a el componente de header*/}
-          <div className=" flex h-full w-full grid-cols-10 flex-col md:grid">
-            {/*slider seccion derecha contendedor*/}
-            <div className=" col-span-4 mb-3 flex h-full flex-1 flex-col justify-end px-5 md:mb-0 md:justify-center md:px-10">
-              <SlideInfo 
-              transitionData={transitionData} 
-              currentSlideData={currentSlideData}
-              />
+    <main className={`${inter.className} select-none antialiased`}>
+      {/* Hero Section */}
+      <HeroSection />
 
-            </div>
-            <div className=" col-span-6 flex h-full flex-1 flex-col justify-start p-4 md:justify-center md:p-10">
-              <Slides data={data}/>
-              <Controls
-              currentSlideData={currentSlideData}
-              data={data}
-              transitionData={transitionData}
-              initData={initData}
-              handleData={setData}
-              handleTransitionData={setTransitionData} 
-              handleCurrentSlideData={setCurrentSlideData}
-              sliderData={sliderData} 
-              />    
+      {/* Slider Section */}
+      <section className="relative h-screen overflow-hidden bg-black text-white">
+        <AnimatePresence>
+          <BackgroundImage
+          key="background"
+          transitionData={transitionData}
+          currentSlideData={currentSlideData}/>
+          <div key="content" className="absolute top-0 left-0 z-20 h-full w-full">
+            <Header />
+            <div className=" flex h-full w-full grid-cols-10 flex-col md:grid">
+              <div className=" col-span-4 mb-3 flex h-full flex-1 flex-col justify-end px-5 md:mb-0 md:justify-center md:px-10">
+                <SlideInfo
+                transitionData={transitionData}
+                currentSlideData={currentSlideData}
+                />
               </div>
-              
-
-
+              <div className=" col-span-6 flex h-full flex-1 flex-col justify-start p-4 md:justify-center md:p-10">
+                <Slides data={data}/>
+                <Controls
+                currentSlideData={currentSlideData}
+                data={data}
+                transitionData={transitionData}
+                initData={initData}
+                handleData={setData}
+                handleTransitionData={setTransitionData}
+                handleCurrentSlideData={setCurrentSlideData}
+                sliderData={sliderData}
+                />
+              </div>
+            </div>
           </div>
-        </div>
-      </AnimatePresence>
+        </AnimatePresence>
+      </section>
     </main>
-    
   );
 }
 
