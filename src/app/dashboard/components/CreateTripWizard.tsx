@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import {
@@ -22,25 +22,49 @@ type Props = {
   onClose: () => void;
 };
 
+const STORAGE_KEY = "bonvoyage_wizard";
+
 export default function CreateTripWizard({ place, onClose }: Props) {
   const { getToken } = useAuth();
   const router = useRouter();
-  const [step, setStep] = useState(1);
 
-  // Step 2 — flight info
-  const [origin, setOrigin] = useState("");
-  const [departDate, setDepartDate] = useState("");
-  const [returnDate, setReturnDate] = useState("");
-  const [passengers, setPassengers] = useState(1);
-  const [cabinClass, setCabinClass] = useState("economy");
+  // Restore from sessionStorage if available (survives page reload mid-wizard)
+  const saved = (() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      // Only restore if it's for the same destination
+      return parsed.placeName === place.name ? parsed : null;
+    } catch { return null; }
+  })();
 
-  // Step 3 — trip details
-  const [tripName, setTripName] = useState(`${place.name} ${new Date().getFullYear()}`);
-  const [budget, setBudget] = useState("");
-  const [currency, setCurrency] = useState("USD");
+  const [step, setStep] = useState<number>(saved?.step ?? 1);
+  const [origin, setOrigin] = useState<string>(saved?.origin ?? "");
+  const [departDate, setDepartDate] = useState<string>(saved?.departDate ?? "");
+  const [returnDate, setReturnDate] = useState<string>(saved?.returnDate ?? "");
+  const [passengers, setPassengers] = useState<number>(saved?.passengers ?? 1);
+  const [cabinClass, setCabinClass] = useState<string>(saved?.cabinClass ?? "economy");
+  const [tripName, setTripName] = useState<string>(saved?.tripName ?? `${place.name} ${new Date().getFullYear()}`);
+  const [budget, setBudget] = useState<string>(saved?.budget ?? "");
+  const [currency, setCurrency] = useState<string>(saved?.currency ?? "USD");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Persist wizard state on every change
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+        placeName: place.name, step, origin, departDate, returnDate,
+        passengers, cabinClass, tripName, budget, currency,
+      }));
+    } catch { /* ignore */ }
+  }, [step, origin, departDate, returnDate, passengers, cabinClass, tripName, budget, currency, place.name]);
+
+  function clearWizard() {
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+  }
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -113,6 +137,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
         cabinClass,
         ...(place.photoUrl ? { photoUrl: place.photoUrl } : {}),
       });
+      clearWizard();
       router.push(`/trip?${params.toString()}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Error al crear el viaje");
@@ -135,7 +160,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
             <div className="h-36 bg-gradient-to-r from-blue-500 to-blue-400" />
           )}
           <button
-            onClick={onClose}
+            onClick={() => { clearWizard(); onClose(); }}
             className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50 transition-colors"
           >
             <IoClose />
