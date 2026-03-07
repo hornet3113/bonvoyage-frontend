@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
 import Header from "@/app/components/Header";
@@ -26,6 +26,23 @@ export default function DashboardPage() {
   const [flyTo, setFlyTo] = useState<{ lng: number; lat: number } | null>(null);
   const [wizardPlace, setWizardPlace] = useState<SelectedPlace | null>(null);
   const [wishlistToast, setWishlistToast] = useState<"success" | "error" | null>(null);
+  const [fromWishlist, setFromWishlist] = useState(false);
+
+  // Auto-open DestinationCard when navigating from wishlist "Planificar viaje"
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("fromWishlist") !== "1") return;
+    const lat = parseFloat(params.get("lat") ?? "");
+    const lng = parseFloat(params.get("lng") ?? "");
+    const city = params.get("city") ?? "";
+    const country = params.get("country") ?? "";
+    const photo = params.get("photo") ?? null;
+    if (!isNaN(lat) && !isNaN(lng) && city) {
+      setFlyTo({ lat, lng });
+      setSelectedPlace({ name: city, country, fullName: country ? `${city}, ${country}` : city, lat, lng, photoUrl: photo || null });
+      setFromWishlist(true);
+    }
+  }, []);
 
   const handleSearch = useCallback(async (result: { name: string; lng: number; lat: number }) => {
     setFlyTo({ lng: result.lng, lat: result.lat });
@@ -61,8 +78,9 @@ export default function DashboardPage() {
           <DestinationCard
             place={selectedPlace}
             onSave={handleSaveToWishlist}
-            onCancel={() => setSelectedPlace(null)}
+            onCancel={() => { setSelectedPlace(null); setFromWishlist(false); }}
             onCreateTrip={() => { setWizardPlace(selectedPlace); setSelectedPlace(null); }}
+            hideSave={fromWishlist}
           />
         )}
         {wishlistToast && (

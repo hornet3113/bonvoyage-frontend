@@ -50,6 +50,26 @@ export default function CreateTripWizard({ place, onClose }: Props) {
     try {
       const token = await getToken();
 
+      // Prevent duplicate trips to the same destination
+      const tripsRes = await fetch(`${BACKEND}/api/trips`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (tripsRes.ok) {
+        const tripsData = await tripsRes.json();
+        const existing: Array<{ destination_name?: string; destination_city?: string }> =
+          tripsData.trips ?? tripsData.data ?? tripsData ?? [];
+        const duplicate = existing.find(
+          (t) =>
+            (t.destination_city ?? t.destination_name ?? "").toLowerCase() ===
+            place.name.toLowerCase()
+        );
+        if (duplicate) {
+          setError(`Ya tienes un viaje a ${place.name}. Accédelo desde "Mis viajes" para continuar planificándolo.`);
+          setLoading(false);
+          return;
+        }
+      }
+
       const body: Record<string, unknown> = {
         trip_name: tripName,
         destination_name: place.name,

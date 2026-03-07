@@ -196,7 +196,7 @@ function WishlistCard({
           </p>
         )}
         <Link
-          href={`/dashboard?lat=${item.latitude}&lng=${item.longitude}&name=${encodeURIComponent(item.city)}`}
+          href={`/dashboard?lat=${item.latitude}&lng=${item.longitude}&city=${encodeURIComponent(item.city)}&country=${encodeURIComponent(item.country ?? "")}&photo=${encodeURIComponent(item.destination_image ?? "")}&fromWishlist=1`}
           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold transition-colors"
         >
           <IoAirplane className="text-sm" />

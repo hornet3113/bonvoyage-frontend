@@ -16,9 +16,10 @@ type Props = {
   onSave: (place: SelectedPlace) => void;
   onCancel: () => void;
   onCreateTrip: () => void;
+  hideSave?: boolean;
 };
 
-export default function DestinationCard({ place, onSave, onCancel, onCreateTrip }: Props) {
+export default function DestinationCard({ place, onSave, onCancel, onCreateTrip, hideSave }: Props) {
 
   return (
     <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm bg-white shadow-2xl border border-gray-100 overflow-hidden rounded-2xl">
@@ -65,12 +66,14 @@ export default function DestinationCard({ place, onSave, onCancel, onCreateTrip 
           >
             Crear viaje
           </button>
-          <button
-            onClick={() => onSave(place)}
-            className="flex-1 py-2 rounded-lg bg-blue-400 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            Añadir a wishlist
-          </button>
+          {!hideSave && (
+            <button
+              onClick={() => onSave(place)}
+              className="flex-1 py-2 rounded-lg bg-blue-400 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Añadir a wishlist
+            </button>
+          )}
         </div>
       </div>
     </div>

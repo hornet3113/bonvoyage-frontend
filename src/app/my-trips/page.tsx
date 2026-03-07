@@ -104,8 +104,8 @@ export default function MyTripsPage() {
 }
 
 function TripCard({ trip, onClick }: { trip: Trip; onClick: () => void }) {
-  const start = trip.start_date ? new Date(trip.start_date + "T00:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) : "";
-  const end = trip.end_date ? new Date(trip.end_date + "T00:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) : "";
+  const start = trip.start_date ? new Date(trip.start_date.slice(0, 10) + "T12:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) : "";
+  const end = trip.end_date ? new Date(trip.end_date.slice(0, 10) + "T12:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short", year: "numeric" }) : "";
 
   const statusColor: Record<string, string> = {
     PLANNED: "bg-blue-100 text-blue-600",
