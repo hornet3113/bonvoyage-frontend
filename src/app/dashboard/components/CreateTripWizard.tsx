@@ -9,6 +9,20 @@ import {
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
+const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+function getPopularMonths(lat: number): number[] {
+  const abs = Math.abs(lat);
+  if (abs < 12)  return [12, 1, 2, 3];           // tropical: temporada seca
+  if (abs < 30)  return lat > 0
+    ? [10, 11, 12, 1, 2, 3]                       // subtropical norte: meses frescos
+    : [4, 5, 9, 10];                              // subtropical sur
+  if (abs < 60)  return lat > 0
+    ? [5, 6, 7, 8, 9]                             // templado norte: verano
+    : [11, 12, 1, 2, 3];                          // templado sur: verano austral
+  return [6, 7, 8];                               // polar/subpolar: verano corto
+}
+
 type Place = {
   name: string;
   country: string;
@@ -211,6 +225,41 @@ export default function CreateTripWizard({ place, onClose }: Props) {
                   </div>
                 )}
               </div>
+
+              {/* Meses populares */}
+              <div className="bg-gray-50 rounded-xl p-3">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                  Meses recomendados para visitar
+                </p>
+                <div className="grid grid-cols-6 gap-1">
+                  {MONTHS.map((m, i) => {
+                    const monthNum = i + 1;
+                    const popular = getPopularMonths(place.lat).includes(monthNum);
+                    return (
+                      <div
+                        key={m}
+                        className={`text-center py-1.5 rounded-lg text-[10px] font-semibold transition-colors ${
+                          popular
+                            ? "bg-blue-500 text-white"
+                            : "bg-white text-gray-400 border border-gray-100"
+                        }`}
+                      >
+                        {m}
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2">
+                  Mejor época:{" "}
+                  <span className="text-blue-500 font-semibold">
+                    {getPopularMonths(place.lat)
+                      .sort((a, b) => a - b)
+                      .map((n) => MONTHS[n - 1])
+                      .join(", ")}
+                  </span>
+                </p>
+              </div>
+
               <button
                 onClick={() => setStep(2)}
                 className="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-semibold text-sm transition-colors"
