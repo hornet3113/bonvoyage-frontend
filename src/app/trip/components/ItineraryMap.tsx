@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import Map, { Marker, NavigationControl, Popup, type MapRef } from "react-map-gl/mapbox";
+import Map, { Marker, NavigationControl, type MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { IoLocationSharp, IoStar, IoBed, IoRestaurant, IoCompass, IoClose } from "react-icons/io5";
+import { IoLocationSharp } from "react-icons/io5";
 
 export type ItineraryMapItem = {
   id: string;
@@ -53,11 +53,6 @@ export default function ItineraryMap({ items, selectedId, onSelectId, center }: 
     mapRef.current.flyTo({ center: [item.lng, item.lat], zoom: 15, duration: 1000 });
   }, [selectedId, items]);
 
-  const selectedItem = selectedId ? items.find((i) => i.id === selectedId) : null;
-  const Icon = selectedItem
-    ? selectedItem.type === "hotel" ? IoBed : selectedItem.type === "restaurant" ? IoRestaurant : IoCompass
-    : IoCompass;
-
   return (
     <Map
       ref={mapRef}
@@ -91,73 +86,6 @@ export default function ItineraryMap({ items, selectedId, onSelectId, center }: 
           </Marker>
         );
       })}
-
-      {selectedItem && (
-        <Popup
-          longitude={selectedItem.lng}
-          latitude={selectedItem.lat}
-          anchor="bottom"
-          offset={44}
-          closeButton={false}
-          closeOnClick={false}
-          onClose={() => onSelectId(null)}
-          className="!p-0 !rounded-2xl !shadow-xl !border-0"
-          maxWidth="260px"
-        >
-          <div
-            className="bg-white rounded-2xl overflow-hidden w-64 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button */}
-            <button
-              onClick={() => onSelectId(null)}
-              className="absolute top-2 right-2 z-10 w-6 h-6 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-colors"
-            >
-              <IoClose className="text-white text-xs" />
-            </button>
-
-            {/* Photo */}
-            <div className="w-full h-28 bg-gray-100 overflow-hidden">
-              {selectedItem.photoUrl ? (
-                <img src={selectedItem.photoUrl} alt={selectedItem.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-50">
-                  <Icon className="text-3xl text-gray-200" />
-                </div>
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="p-3 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${BADGE[selectedItem.type].cls}`}>
-                  {BADGE[selectedItem.type].label}
-                </span>
-                {selectedItem.dayNumber && (
-                  <span className="text-[9px] text-gray-400">Día {selectedItem.dayNumber}</span>
-                )}
-              </div>
-
-              <h3 className="font-bold text-gray-800 text-sm leading-snug line-clamp-2">{selectedItem.name}</h3>
-
-              {selectedItem.rating && (
-                <div className="flex items-center gap-1">
-                  <IoStar className="text-amber-400 text-xs" />
-                  <span className="text-xs font-semibold text-gray-700">{selectedItem.rating.toFixed(1)}</span>
-                </div>
-              )}
-
-              {selectedItem.description && (
-                <p className="text-[10px] text-gray-500 leading-relaxed line-clamp-2">{selectedItem.description}</p>
-              )}
-
-              {selectedItem.address && (
-                <p className="text-[10px] text-gray-400 line-clamp-1">{selectedItem.address}</p>
-              )}
-            </div>
-          </div>
-        </Popup>
-      )}
     </Map>
   );
 }

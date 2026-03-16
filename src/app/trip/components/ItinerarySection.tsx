@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import {
   IoCalendar, IoCompass, IoRestaurant, IoBed, IoAirplane,
-  IoArrowForward, IoLocationSharp, IoStar, IoTrash, IoMap, IoReorderThree,
+  IoArrowForward, IoLocationSharp, IoStar, IoTrash, IoMap, IoReorderThree, IoClose,
 } from "react-icons/io5";
 import type { TripItinerary, ItineraryItem } from "../types";
 import {
@@ -12,7 +12,7 @@ import {
   PointerSensor, useSensor, useSensors,
 } from "@dnd-kit/core";
 import {
-  SortableContext, useSortable, rectSortingStrategy, arrayMove,
+  SortableContext, useSortable, horizontalListSortingStrategy, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -85,6 +85,12 @@ export default function ItinerarySection({ itinerary, onRemove, onReorder, saved
   }, [itinerary.days]);
 
   const showMap = !!center && mapItems.length > 0;
+  const selectedMapItem = selectedId ? mapItems.find((i) => i.id === selectedId) : null;
+  const BADGE: Record<string, { label: string; cls: string }> = {
+    poi: { label: "Lugar", cls: "bg-blue-50 text-blue-600" },
+    restaurant: { label: "Restaurante", cls: "bg-orange-50 text-orange-500" },
+    hotel: { label: "Hotel", cls: "bg-purple-50 text-purple-600" },
+  };
 
   if (itinerary.days.length === 0 && !hasLocations) {
     return (
@@ -197,9 +203,9 @@ export default function ItinerarySection({ itinerary, onRemove, onReorder, saved
             >
               <SortableContext
                 items={day.items.map((i) => i.itemId ?? i.id)}
-                strategy={rectSortingStrategy}
+                strategy={horizontalListSortingStrategy}
               >
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pl-11">
+                <div className="flex gap-3 overflow-x-auto pb-2 pl-11 pr-4" style={{ scrollbarWidth: "thin", scrollbarColor: "#e5e7eb transparent" }}>
                   {day.items.map((item) => (
                     <SortableItineraryCard
                       key={item.itemId ?? item.id}
@@ -217,12 +223,13 @@ export default function ItinerarySection({ itinerary, onRemove, onReorder, saved
         ))}
       </div>
 
-      {/* ── Right: sticky map ── */}
+      {/* ── Right: sticky map + detail panel ── */}
       {showMap && (
-        <div className="w-[420px] flex-shrink-0 pr-4 pt-6 pb-10">
-          <div className="sticky top-4">
+        <div className="w-[400px] flex-shrink-0 pr-4 pt-6 pb-10">
+          <div className="sticky top-4 flex flex-col gap-3">
+
             {/* Legend */}
-            <div className="flex items-center gap-4 text-[10px] text-gray-500 mb-2 px-1">
+            <div className="flex items-center gap-4 text-[10px] text-gray-500 px-1">
               <span className="flex items-center gap-1"><IoLocationSharp className="text-blue-500" /> Lugar</span>
               <span className="flex items-center gap-1"><IoLocationSharp className="text-orange-500" /> Restaurante</span>
               <span className="flex items-center gap-1"><IoLocationSharp className="text-indigo-500" /> Hotel</span>
@@ -233,7 +240,8 @@ export default function ItinerarySection({ itinerary, onRemove, onReorder, saved
               </div>
             </div>
 
-            <div className="h-[calc(100vh-200px)] min-h-[400px] rounded-2xl overflow-hidden shadow-md border border-gray-100">
+            {/* Map */}
+            <div className="h-72 rounded-2xl overflow-hidden shadow-md border border-gray-100">
               <ItineraryMap
                 items={mapItems}
                 selectedId={selectedId}
@@ -241,6 +249,76 @@ export default function ItinerarySection({ itinerary, onRemove, onReorder, saved
                 center={center!}
               />
             </div>
+
+            {/* Detail panel */}
+            {selectedMapItem ? (
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="flex gap-3 p-3">
+                  {/* Photo */}
+                  <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+                    {selectedMapItem.photoUrl ? (
+                      <img src={selectedMapItem.photoUrl} alt={selectedMapItem.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        {selectedMapItem.type === "hotel"
+                          ? <IoBed className="text-2xl text-gray-200" />
+                          : selectedMapItem.type === "restaurant"
+                          ? <IoRestaurant className="text-2xl text-gray-200" />
+                          : <IoCompass className="text-2xl text-gray-200" />}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-1">
+                      <div>
+                        <span className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${BADGE[selectedMapItem.type]?.cls}`}>
+                          {BADGE[selectedMapItem.type]?.label}
+                        </span>
+                        {selectedMapItem.dayNumber && (
+                          <span className="ml-1.5 text-[9px] text-gray-400">· Día {selectedMapItem.dayNumber}</span>
+                        )}
+                      </div>
+                      <button onClick={() => setSelectedId(null)} className="p-0.5 rounded-full hover:bg-gray-100 flex-shrink-0">
+                        <IoClose className="text-gray-400 text-sm" />
+                      </button>
+                    </div>
+
+                    <h3 className="font-bold text-gray-800 text-sm leading-snug mt-1 line-clamp-2">
+                      {selectedMapItem.name}
+                    </h3>
+
+                    {selectedMapItem.rating && (
+                      <div className="flex items-center gap-1 mt-1">
+                        <IoStar className="text-amber-400 text-xs" />
+                        <span className="text-xs font-semibold text-gray-700">{selectedMapItem.rating.toFixed(1)}</span>
+                      </div>
+                    )}
+
+                    {selectedMapItem.address && (
+                      <div className="flex items-start gap-1 mt-1">
+                        <IoLocationSharp className="text-gray-300 text-xs flex-shrink-0 mt-0.5" />
+                        <p className="text-[10px] text-gray-400 line-clamp-2">{selectedMapItem.address}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {selectedMapItem.description && (
+                  <div className="px-3 pb-3">
+                    <p className="text-[10px] text-gray-500 leading-relaxed line-clamp-2 border-t border-gray-50 pt-2">
+                      {selectedMapItem.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 text-center">
+                <p className="text-xs text-gray-400">Toca un marcador en el mapa para ver los detalles</p>
+              </div>
+            )}
+
           </div>
         </div>
       )}
@@ -269,6 +347,7 @@ function SortableItineraryCard(props: {
         opacity: isDragging ? 0.4 : 1,
         zIndex: isDragging ? 50 : undefined,
       }}
+      className="w-44 flex-shrink-0"
     >
       <ItineraryCard {...props} dragHandleProps={!props.readOnly ? { ...attributes, ...listeners } : undefined} />
     </div>
