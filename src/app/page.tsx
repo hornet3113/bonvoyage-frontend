@@ -1,5 +1,8 @@
+import { Righteous } from "next/font/google";
 import HeroSection from "@/app/components/HeroSection";
 import ProblemSection from "@/app/components/ProblemSection";
+
+const righteous = Righteous({ subsets: ["latin"], weight: ["400"] });
 
 export type Data = {
   img: string;
@@ -15,7 +18,7 @@ export type CurrentSlideData = {
 
 export default function Home() {
   return (
-    <main className="select-none antialiased">
+    <main className={`${righteous.className} select-none antialiased`}>
       <HeroSection />
       <ProblemSection />
     </main>
