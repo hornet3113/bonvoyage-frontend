@@ -1,5 +1,5 @@
 "use client";
-import { Righteous } from "next/font/google";
+import { Barlow_Condensed } from "next/font/google";
 import { AnimatePresence } from "motion/react";
 import React from "react";
 import BackgroundImage from "@/app/components/BackgroundImage";
@@ -9,38 +9,48 @@ import Controls from "@/app/components/Controls";
 import Header from "@/app/components/Header";
 import { Data, CurrentSlideData } from "@/app/page";
 
-const inter = Righteous({ subsets: ["latin"], weight: ["400"] });
+const barlow = Barlow_Condensed({ subsets: ["latin"], weight: ["400", "700", "800"] });
 
 const sliderData: Data[] = [
   {
     img: "/images/slide1.jpg",
-    title: "Explora el mundo con nosotros",
-    description: "Descubre lugares increíbles con nuestra experiencia de viaje personalizada.",
-    location: "Mundo",
+    category: "Turquía · Puente entre Continentes",
+    title: "Estambul",
+    description:
+      "Explora la magia de la antigua Constantinopla. Desde los intrincados mosaicos de Santa Sofía hasta el bullicio del Gran Bazar, vive una experiencia donde el oriente se encuentra con el occidente.",
+    location: "Turquía · Europa & Asia",
   },
   {
     img: "/images/slide2.jpg",
-    title: "Explora bellos lugares",
-    description: "probando textos para ver el slideje personalizada.",
-    location: "Milan",
+    category: "Reino Unido · El Corazón del Támesis",
+    title: "Londres",
+    description:
+      "Camina por la historia viva entre el Big Ben y el London Eye. Desde la elegancia de Notting Hill hasta la vanguardia de Shoreditch, Londres ofrece una mezcla perfecta de tradición real y cultura moderna.",
+    location: "Reino Unido · Europa",
   },
   {
     img: "/images/slide3.png",
-    title: "Probando contenido",
-    description: "Prieba viajar con nosotro.",
-    location: "Colombia",
+    category: "Emiratos Árabes · El Lujo del Futuro",
+    title: "Dubai",
+    description:
+      "Admira el horizonte más futurista del mundo desde la cima del Burj Khalifa. Sumérgete en el lujo infinito de sus islas artificiales o vive la adrenalina de un safari por las dunas doradas del desierto.",
+    location: "Emiratos Árabes · Medio Oriente",
   },
   {
     img: "/images/slide4.jpg",
-    title: "Explora paisajes con nosotros",
-    description: "Desconectate ya no me sale.",
-    location: "Mexico",
+    category: "Francia · La Ciudad de la Luz",
+    title: "París",
+    description:
+      "Déjate seducir por el encanto de Montmartre y la majestuosidad de la Torre Eiffel. Disfruta de una tarde en los jardines de las Tullerías y descubre por qué París sigue siendo la capital mundial del arte y el romance.",
+    location: "Francia · Europa",
   },
   {
     img: "/images/slide5.jpg",
-    title: "Me quiero dar de baja",
-    description: "Porque no se parece al tutorial.",
-    location: "Tokio",
+    category: "España · Arte y Mediterráneo",
+    title: "Barcelona",
+    description:
+      "Descubre el universo surrealista de Gaudí en la Sagrada Familia y el Park Güell. Pierde la noción del tiempo en las calles del Barrio Gótico y termina el día disfrutando de la brisa marina en la Barceloneta.",
+    location: "España · Mediterráneo",
   },
 ];
 
@@ -55,7 +65,7 @@ export default function DestinationsPage() {
   });
 
   return (
-    <main className={`${inter.className} select-none antialiased`}>
+    <main className={`${barlow.className} select-none antialiased`}>
       <section className="relative h-screen overflow-hidden bg-black text-white">
         <AnimatePresence>
           <BackgroundImage
@@ -63,6 +73,9 @@ export default function DestinationsPage() {
             transitionData={transitionData}
             currentSlideData={currentSlideData}
           />
+          {/* Gradient lateral para legibilidad del texto */}
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
+
           <div key="content" className="absolute top-0 left-0 z-20 h-full w-full">
             <Header />
             <div className="flex h-full w-full grid-cols-10 flex-col pt-20 md:grid md:pt-16">

@@ -9,6 +9,7 @@ export type Data = {
   title: string;
   description: string;
   location: string;
+  category?: string;
 };
 
 export type CurrentSlideData = {
