@@ -468,7 +468,7 @@ function TripPageContent() {
         defaultReturnDate={wizardFlightParams.endDate}
         defaultPassengers={wizardFlightParams.passengers}
         defaultCabinClass={wizardFlightParams.cabinClass}
-        onFlightSave={(info) => setSavedFlight(info)}
+        onFlightSave={(info) => { setSavedFlight(info); loadTrip(); }}
       />
     ),
     hospedaje: (
@@ -477,7 +477,7 @@ function TripPageContent() {
         tripId={tripId ?? ""}
         tripDays={tripDays}
         savedHotelExternalId={savedHotel?.externalId ?? null}
-        onHotelSave={(hotel) => setSavedHotel(hotel)}
+        onHotelSave={(hotel) => { setSavedHotel(hotel); loadTrip(); }}
       />
     ),
     puntos: (
