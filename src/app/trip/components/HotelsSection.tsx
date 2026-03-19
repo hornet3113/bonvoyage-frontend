@@ -85,7 +85,17 @@ export default function HotelsSection({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [savedId, setSavedId] = useState<string | null>(savedHotelExternalId ?? null);
-  const [selectedDayId, setSelectedDayId] = useState<string>("");
+  // días que cubre el hotel según check-in / check-out
+  function getMatchingDays(): TripDay[] {
+    if (!tripDays.length) return [];
+    const matching = tripDays.filter(
+      (d) => d.date && d.date >= checkIn && d.date < checkOut
+    );
+    if (matching.length > 0) return matching;
+    // fallback: día más cercano al check-in
+    const sorted = [...tripDays].sort((a, b) => a.date.localeCompare(b.date));
+    return [sorted[0]];
+  }
 
   async function handleSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -146,13 +156,13 @@ export default function HotelsSection({
 
   async function handleSaveToItinerary() {
     if (!selectedHotel || !tripId) return;
-    const dayId = selectedDayId || tripDays[0]?.dayId;
-    if (!dayId) return;
+    const days = getMatchingDays();
+    if (!days.length) return;
     setSaving(true);
     try {
       const token = await getToken();
 
-      // Step 1: upsert place reference
+      // Step 1: upsert place reference (una sola vez)
       const saveRes = await fetch(`${BACKEND}/api/places/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -169,17 +179,20 @@ export default function HotelsSection({
       if (!saveRes.ok) throw new Error("Error al guardar referencia");
       const { reference_id } = await saveRes.json();
 
-      // Step 2: add to itinerary day
-      const itemRes = await fetch(`${BACKEND}/api/trips/${tripId}/days/${dayId}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          item_type: "PLACE",
-          place_reference_id: reference_id,
-          estimated_cost: parseFloat(String(selectedHotel.price).replace(/[^0-9.]/g, "")) || undefined,
-        }),
-      });
-      if (!itemRes.ok) throw new Error("Error al añadir al itinerario");
+      // Step 2: agregar el hotel a cada día del rango check-in → check-out
+      await Promise.all(
+        days.map((d) =>
+          fetch(`${BACKEND}/api/trips/${tripId}/days/${d.dayId}/items`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+              item_type: "PLACE",
+              place_reference_id: reference_id,
+              estimated_cost: parseFloat(String(selectedHotel.price).replace(/[^0-9.]/g, "")) || undefined,
+            }),
+          })
+        )
+      );
 
       setSavedId(selectedHotel.id ?? selectedId);
       onHotelSave?.({ name: selectedHotel.name, imageUrl: selectedHotel.imageUrl, price: selectedHotel.price, externalId: selectedHotel.id ?? undefined });
@@ -400,19 +413,22 @@ export default function HotelsSection({
 
                     {tripId && (
                       <div className="space-y-1.5">
-                        {tripDays.length > 1 && (
-                          <select
-                            value={selectedDayId || tripDays[0]?.dayId}
-                            onChange={(e) => setSelectedDayId(e.target.value)}
-                            className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white"
-                          >
-                            {tripDays.map((d) => (
-                              <option key={d.dayId} value={d.dayId}>
-                                Día {d.dayNumber}{d.date ? ` · ${d.date}` : ""}
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                        {/* Resumen automático de días cubiertos */}
+                        {tripDays.length > 0 && (() => {
+                          const days = getMatchingDays();
+                          if (!days.length) return null;
+                          const first = days[0];
+                          const last = days[days.length - 1];
+                          const label = days.length === 1
+                            ? `Día ${first.dayNumber}${first.date ? ` · ${first.date}` : ""}`
+                            : `Días ${first.dayNumber}–${last.dayNumber} (${checkIn} → ${checkOut})`;
+                          return (
+                            <p className="text-[10px] text-gray-400 flex items-center gap-1">
+                              <IoCalendarOutline className="text-xs flex-shrink-0" />
+                              {label}
+                            </p>
+                          );
+                        })()}
                         <button
                           onClick={handleSaveToItinerary}
                           disabled={saving || savedId === (selectedHotel.id ?? selectedId)}
