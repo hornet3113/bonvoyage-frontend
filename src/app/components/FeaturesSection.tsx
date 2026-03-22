@@ -55,7 +55,7 @@ export default function FeaturesSection() {
           {/* Imagen */}
           <div className="relative h-96 overflow-hidden rounded-2xl md:h-auto">
             <img
-              src="/images/slide1.png"
+              src="/images/image3.jpg"
               alt="Destino de viaje"
               className="h-full w-full object-cover"
             />
