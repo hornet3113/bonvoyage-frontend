@@ -33,7 +33,7 @@ export function useTripTimeTracker(tripId: string | null, active: boolean) {
         .then((token) => {
           if (!token) return;
           // keepalive asegura que la request se complete aunque el usuario cierre la pestaña
-          fetch(`${BACKEND}/api/trips/${tripId}/time`, {
+          fetch(`${BACKEND}/api/v1/trips/${tripId}/time`, {
             method: "PATCH",
             headers: {
               "Content-Type": "application/json",

@@ -109,7 +109,7 @@ export default function HotelsSection({
 
      
       const destRes = await fetch(
-        `${BACKEND}/api/destinations/search?query=${encodeURIComponent(destination.name)}`,
+        `${BACKEND}/api/v1/destinations/search?query=${encodeURIComponent(destination.name)}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!destRes.ok) throw new Error("No se pudo resolver el destino");
@@ -132,7 +132,7 @@ export default function HotelsSection({
       });
 
       const res = await fetch(
-        `${BACKEND}/api/hotels/search?${params}`,
+        `${BACKEND}/api/v1/hotels/search?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -163,7 +163,7 @@ export default function HotelsSection({
       const token = await getToken();
 
       // Step 1: upsert place reference (una sola vez)
-      const saveRes = await fetch(`${BACKEND}/api/places/save`, {
+      const saveRes = await fetch(`${BACKEND}/api/v1/places/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -182,7 +182,7 @@ export default function HotelsSection({
       // Step 2: agregar el hotel a cada día del rango check-in → check-out
       await Promise.all(
         days.map((d) =>
-          fetch(`${BACKEND}/api/trips/${tripId}/days/${d.dayId}/items`, {
+          fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${d.dayId}/items`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: JSON.stringify({

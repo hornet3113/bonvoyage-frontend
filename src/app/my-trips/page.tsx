@@ -39,7 +39,7 @@ export default function MyTripsPage() {
     async function load() {
       try {
         const token = await getToken();
-        const res = await fetch(`${BACKEND}/api/trips`, {
+        const res = await fetch(`${BACKEND}/api/v1/trips`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -62,14 +62,14 @@ export default function MyTripsPage() {
     setTrips((prev) => prev.filter((t) => t.trip_id !== tripId));
     try {
       const token = await getToken();
-      await fetch(`${BACKEND}/api/trips/${tripId}`, {
+      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch {
       // Reload on error to restore the list
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/trips`, { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(`${BACKEND}/api/v1/trips`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
         setTrips(data.trips ?? data.data ?? data ?? []);
@@ -88,7 +88,7 @@ export default function MyTripsPage() {
     );
     try {
       const token = await getToken();
-      await fetch(`${BACKEND}/api/trips/${tripId}`, {
+      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ is_favorite: !current }),

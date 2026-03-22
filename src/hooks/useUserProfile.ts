@@ -31,7 +31,7 @@ export function useUserProfile() {
     async function load() {
       try {
         const token = await getToken();
-        const res = await fetch(`${BACKEND}/api/users/me`, {
+        const res = await fetch(`${BACKEND}/api/v1/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -48,7 +48,7 @@ export function useUserProfile() {
     if (avatars.length > 0) return;
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/avatars`, {
+      const res = await fetch(`${BACKEND}/api/v1/avatars`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
@@ -64,7 +64,7 @@ export function useUserProfile() {
       setUpdating(true);
       try {
         const token = await getToken();
-        const res = await fetch(`${BACKEND}/api/users/me`, {
+        const res = await fetch(`${BACKEND}/api/v1/users/me`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",

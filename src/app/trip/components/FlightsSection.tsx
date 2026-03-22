@@ -69,7 +69,7 @@ function formatTime(iso: string | null) {
 
 async function resolveLocation(query: string, token: string) {
   const res = await fetch(
-    `${BACKEND}/api/flights/location?query=${encodeURIComponent(query)}`,
+    `${BACKEND}/api/v1/flights/location?query=${encodeURIComponent(query)}`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   if (!res.ok) throw new Error(`No se encontró "${query}"`);
@@ -113,7 +113,7 @@ export default function FlightsSection({
     if (dayId.startsWith("placeholder-")) return;
     const token = await getToken();
     const firstLeg = vuelo.tramos?.[0];
-    const saveRes = await fetch(`${BACKEND}/api/flights/save`, {
+    const saveRes = await fetch(`${BACKEND}/api/v1/flights/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -131,7 +131,7 @@ export default function FlightsSection({
     });
     if (!saveRes.ok) throw new Error("Error al guardar vuelo");
     const { reference_id } = await saveRes.json();
-    await fetch(`${BACKEND}/api/trips/${tripId}/days/${dayId}/items`, {
+    await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${dayId}/items`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
@@ -198,7 +198,7 @@ export default function FlightsSection({
         params.set("returnDate", returnDate);
       }
 
-      const res = await fetch(`${BACKEND}/api/flights/search?${params}`, {
+      const res = await fetch(`${BACKEND}/api/v1/flights/search?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -64,7 +64,7 @@ function DashboardContent() {
   async function handleSaveToWishlist(place: SelectedPlace) {
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/wishlist`, {
+      const res = await fetch(`${BACKEND}/api/v1/wishlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ city: place.name, country: place.country }),

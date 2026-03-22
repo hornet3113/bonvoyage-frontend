@@ -55,7 +55,7 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
       try {
         const token = await getToken();
         const res = await fetch(
-          `${BACKEND}/api/poi?lat=${destination.lat}&lng=${destination.lng}`,
+          `${BACKEND}/api/v1/poi?lat=${destination.lat}&lng=${destination.lng}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();

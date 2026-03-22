@@ -60,7 +60,7 @@ export default function WishlistPage() {
     setLoading(true);
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/wishlist`, {
+      const res = await fetch(`${BACKEND}/api/v1/wishlist`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -77,7 +77,7 @@ export default function WishlistPage() {
     setRemoving(wishlistId);
     try {
       const token = await getToken();
-      await fetch(`${BACKEND}/api/wishlist/${wishlistId}`, {
+      await fetch(`${BACKEND}/api/v1/wishlist/${wishlistId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

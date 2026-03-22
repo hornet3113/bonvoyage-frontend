@@ -102,7 +102,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
       const token = await getToken();
 
       // Prevent duplicate trips to the same destination
-      const tripsRes = await fetch(`${BACKEND}/api/trips`, {
+      const tripsRes = await fetch(`${BACKEND}/api/v1/trips`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (tripsRes.ok) {
@@ -135,7 +135,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
       };
       if (budget) body.total_budget = parseFloat(budget);
 
-      const res = await fetch(`${BACKEND}/api/trips`, {
+      const res = await fetch(`${BACKEND}/api/v1/trips`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

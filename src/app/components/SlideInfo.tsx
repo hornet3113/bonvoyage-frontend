@@ -25,7 +25,7 @@ function SlideInfo({ transitionData, currentSlideData }: Props) {
     const handleAddToWishlist = async () => {
         try {
             const token = await getToken();
-            await fetch(`${BACKEND}/api/wishlist`, {
+            await fetch(`${BACKEND}/api/v1/wishlist`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

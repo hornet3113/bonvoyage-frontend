@@ -55,7 +55,7 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
       try {
         const token = await getToken();
         const res = await fetch(
-          `${BACKEND}/api/restaurants?lat=${destination.lat}&lng=${destination.lng}`,
+          `${BACKEND}/api/v1/restaurants?lat=${destination.lat}&lng=${destination.lng}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await res.json();

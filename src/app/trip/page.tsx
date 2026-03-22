@@ -98,7 +98,7 @@ function TripPageContent() {
     setLoadingTrip(true);
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/trips/${tripId}`, {
+      const res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
@@ -237,7 +237,7 @@ function TripPageContent() {
     setIsFavorite(next);
     try {
       const token = await getToken();
-      await fetch(`${BACKEND}/api/trips/${tripId}`, {
+      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ is_favorite: next }),
@@ -254,7 +254,7 @@ function TripPageContent() {
     setChangingStatus(true);
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/trips/${tripId}/${action}`, {
+      const res = await fetch(`${BACKEND}/api/v1/trips/${tripId}/${action}`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -290,7 +290,7 @@ function TripPageContent() {
       };
       if (editBudget) body.total_budget = parseFloat(editBudget);
       body.currency = editCurrency;
-      await fetch(`${BACKEND}/api/trips/${tripId}`, {
+      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(body),
@@ -309,7 +309,7 @@ function TripPageContent() {
     setDeletingTrip(true);
     try {
       const token = await getToken();
-      await fetch(`${BACKEND}/api/trips/${tripId}`, {
+      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -359,7 +359,7 @@ function TripPageContent() {
       };
 
       // 1. Save/upsert place reference → get reference_id
-      const saveRes = await fetch(`${BACKEND}/api/places/save`, {
+      const saveRes = await fetch(`${BACKEND}/api/v1/places/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -380,7 +380,7 @@ function TripPageContent() {
 
       // 2. Add item to the itinerary day (skip if day has no real backend ID)
       if (!day?.dayId || day.dayId.startsWith("placeholder-")) return;
-      await fetch(`${BACKEND}/api/trips/${tripId}/days/${day.dayId}/items`, {
+      await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${day.dayId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ item_type: "PLACE", place_reference_id: reference_id }),
@@ -407,7 +407,7 @@ function TripPageContent() {
     try {
       const token = await getToken();
       await fetch(
-        `${BACKEND}/api/trips/${tripId}/days/${day.dayId}/items/${itemId}`,
+        `${BACKEND}/api/v1/trips/${tripId}/days/${day.dayId}/items/${itemId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },

@@ -34,7 +34,7 @@ export default function FavoritesPage() {
     async function load() {
       try {
         const token = await getToken();
-        const res = await fetch(`${BACKEND}/api/trips`, {
+        const res = await fetch(`${BACKEND}/api/v1/trips`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error(`Error ${res.status}`);
