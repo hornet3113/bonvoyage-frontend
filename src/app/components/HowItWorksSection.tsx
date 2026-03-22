@@ -1,3 +1,4 @@
+import ParallaxSection from "./ParallaxSection";
 import { IoMapOutline, IoCalendarOutline, IoCheckmarkCircleOutline } from "react-icons/io5";
 
 const steps = [
@@ -25,15 +26,18 @@ const steps = [
 ];
 
 const stats = [
-  { value: "50%", label: "Menos tiempo planificando" },
-  { value: "4",   label: "Servicios integrados"      },
-  { value: "180+", label: "Países disponibles"       },
-  { value: "1",   label: "Sola plataforma"           },
+  { value: "50%",  label: "Menos tiempo planificando" },
+  { value: "4",    label: "Servicios integrados"      },
+  { value: "180+", label: "Países disponibles"        },
+  { value: "1",    label: "Sola plataforma"           },
 ];
 
 export default function HowItWorksSection() {
   return (
-    <section className="bg-white px-6 py-24 md:px-16 lg:px-24">
+    <ParallaxSection
+      variant="light"
+      className="bg-white px-6 py-24 md:px-16 lg:px-24"
+    >
       <div className="mx-auto max-w-6xl flex flex-col gap-20">
 
         {/* Header */}
@@ -54,7 +58,6 @@ export default function HowItWorksSection() {
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
           {steps.map((step, i) => (
             <div key={i} className="flex flex-col gap-5">
-              {/* Number + icon */}
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500 text-white flex-shrink-0">
                   {step.icon}
@@ -64,7 +67,6 @@ export default function HowItWorksSection() {
                 </span>
               </div>
 
-              {/* Connector line (only between steps) */}
               {i < steps.length - 1 && (
                 <div className="hidden md:block h-[1px] w-full bg-slate-100 mt-1 mb-1" />
               )}
@@ -89,6 +91,6 @@ export default function HowItWorksSection() {
         </div>
 
       </div>
-    </section>
+    </ParallaxSection>
   );
 }

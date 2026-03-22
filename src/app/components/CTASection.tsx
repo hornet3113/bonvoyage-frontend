@@ -1,10 +1,14 @@
 import Link from "next/link";
+import ParallaxSection from "./ParallaxSection";
 import { IoAirplaneOutline } from "react-icons/io5";
 
 export default function CTASection() {
   return (
-    <section className="bg-slate-900 px-6 py-28 md:px-16 text-white">
-      <div className="mx-auto max-w-3xl flex flex-col items-center gap-8 text-center">
+    <ParallaxSection
+      variant="dark"
+      className="bg-slate-900 px-6 py-28 md:px-16"
+    >
+      <div className="mx-auto max-w-3xl flex flex-col items-center gap-8 text-center text-white">
 
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400">
           <IoAirplaneOutline className="text-3xl" />
@@ -31,6 +35,6 @@ export default function CTASection() {
         </p>
 
       </div>
-    </section>
+    </ParallaxSection>
   );
 }

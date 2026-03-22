@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, motion, useScroll, useTransform } from "motion/react";
 import BackgroundImage from "./BackgroundImage";
 import Slides from "./Slides";
 import SlideInfo from "./SlideInfo";
@@ -77,45 +77,57 @@ export default function HeroSection() {
     index: 0,
   });
 
+  // Parallax: background drifts down slower than scroll speed
+  const { scrollY } = useScroll();
+  const bgY = useTransform(scrollY, [0, 700], [0, 120]);
+
   return (
     <section className="relative h-screen overflow-hidden bg-black text-white">
-      <AnimatePresence>
-        <BackgroundImage
-          key="background"
-          transitionData={transitionData}
-          currentSlideData={currentSlideData}
-        />
-        {/* Gradiente lateral para legibilidad */}
-        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
+      {/* Parallax background layer — moves at ~17% of scroll speed */}
+      <motion.div
+        style={{ y: bgY }}
+        className="absolute -top-[80px] bottom-[-80px] left-0 right-0 z-0 will-change-transform"
+      >
+        <AnimatePresence>
+          <BackgroundImage
+            key="background"
+            transitionData={transitionData}
+            currentSlideData={currentSlideData}
+          />
+        </AnimatePresence>
+      </motion.div>
 
-        <div key="content" className="absolute top-0 left-0 z-20 h-full w-full">
-          <Header />
-          <div className="flex h-full w-full grid-cols-10 flex-col pt-20 md:grid md:pt-16">
-            {/* Left — info del destino activo */}
-            <div className="col-span-4 mb-3 flex h-full flex-1 flex-col justify-end px-5 md:mb-0 md:justify-center md:px-10">
-              <SlideInfo
-                transitionData={transitionData}
-                currentSlideData={currentSlideData}
-              />
-            </div>
+      {/* Gradient lateral para legibilidad */}
+      <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 via-black/20 to-transparent" />
 
-            {/* Right — cards del slider + controles */}
-            <div className="col-span-6 flex h-full flex-1 flex-col justify-start p-4 md:justify-center md:p-10">
-              <Slides data={data} />
-              <Controls
-                currentSlideData={currentSlideData}
-                data={data}
-                transitionData={transitionData}
-                initData={initData}
-                handleData={setData}
-                handleTransitionData={setTransitionData}
-                handleCurrentSlideData={setCurrentSlideData}
-                sliderData={sliderData}
-              />
-            </div>
+      {/* Contenido fijo — no se mueve con el parallax */}
+      <div className="absolute top-0 left-0 z-20 h-full w-full">
+        <Header />
+        <div className="flex h-full w-full grid-cols-10 flex-col pt-20 md:grid md:pt-16">
+          {/* Left — info del destino activo */}
+          <div className="col-span-4 mb-3 flex h-full flex-1 flex-col justify-end px-5 md:mb-0 md:justify-center md:px-10">
+            <SlideInfo
+              transitionData={transitionData}
+              currentSlideData={currentSlideData}
+            />
+          </div>
+
+          {/* Right — cards del slider + controles */}
+          <div className="col-span-6 flex h-full flex-1 flex-col justify-start p-4 md:justify-center md:p-10">
+            <Slides data={data} />
+            <Controls
+              currentSlideData={currentSlideData}
+              data={data}
+              transitionData={transitionData}
+              initData={initData}
+              handleData={setData}
+              handleTransitionData={setTransitionData}
+              handleCurrentSlideData={setCurrentSlideData}
+              sliderData={sliderData}
+            />
           </div>
         </div>
-      </AnimatePresence>
+      </div>
     </section>
   );
 }

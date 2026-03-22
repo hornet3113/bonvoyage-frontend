@@ -2,6 +2,8 @@ import { Righteous } from "next/font/google";
 import HeroSection from "@/app/components/HeroSection";
 import HowItWorksSection from "@/app/components/HowItWorksSection";
 import ProblemSection from "@/app/components/ProblemSection";
+import AboutUsSection from "@/app/components/AboutUsSection";
+import FeaturesSection from "@/app/components/FeaturesSection";
 import CTASection from "@/app/components/CTASection";
 
 const righteous = Righteous({ subsets: ["latin"], weight: ["400"] });
@@ -28,6 +30,8 @@ export default function Home() {
       <HeroSection />
       <HowItWorksSection />
       <ProblemSection />
+      <FeaturesSection />
+      <AboutUsSection />
       <CTASection />
     </main>
   );
