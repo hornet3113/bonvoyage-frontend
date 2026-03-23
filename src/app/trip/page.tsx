@@ -24,7 +24,7 @@ function TripPageContent() {
   const { getToken } = useAuth();
   const router = useRouter();
 
-  const tripId = searchParams.get("tripId");
+  const tripId = searchParams?.get("tripId") ?? null;
 
   const [activeSection, setActiveSection] = useState<TripSection>(() => {
     if (!tripId) return "vuelos";
@@ -98,12 +98,19 @@ function TripPageContent() {
     setLoadingTrip(true);
     try {
       const token = await getToken();
-      // Retry once on 500 — race condition right after trip creation
+      // Retry up to 2× on 500/400 — race condition right after trip creation
+      const isRetryable = (s: number) => s === 500 || s === 400;
       let res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.status === 500) {
-        await new Promise((r) => setTimeout(r, 1500));
+      if (isRetryable(res.status)) {
+        await new Promise((r) => setTimeout(r, 2000));
+        res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+      if (isRetryable(res.status)) {
+        await new Promise((r) => setTimeout(r, 2000));
         res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
