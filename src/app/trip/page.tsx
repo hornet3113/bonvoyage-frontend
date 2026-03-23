@@ -399,6 +399,69 @@ function TripPageContent() {
     }));
   }
 
+  async function editItineraryItem(
+    itemId: string,
+    dayNumber: number,
+    fields: { start_time?: string; end_time?: string; estimated_cost?: number; notes?: string }
+  ) {
+    const day = itinerary.days.find((d) => d.dayNumber === dayNumber);
+    if (!day || day.dayId.startsWith("placeholder-")) return;
+    const token = await getToken();
+    await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${day.dayId}/items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(fields),
+    });
+    setItinerary((prev) => ({
+      ...prev,
+      days: prev.days.map((d) =>
+        d.dayNumber === dayNumber
+          ? {
+              ...d,
+              items: d.items.map((i) =>
+                (i.itemId ?? i.id) === itemId
+                  ? {
+                      ...i,
+                      startTime: fields.start_time ?? i.startTime,
+                      endTime: fields.end_time ?? i.endTime,
+                      estimatedCost: fields.estimated_cost ?? i.estimatedCost,
+                      notes: fields.notes ?? i.notes,
+                    }
+                  : i
+              ),
+            }
+          : d
+      ),
+    }));
+  }
+
+  async function moveItineraryItem(itemId: string, fromDayNumber: number, targetDayId: string) {
+    const fromDay = itinerary.days.find((d) => d.dayNumber === fromDayNumber);
+    if (!fromDay || fromDay.dayId.startsWith("placeholder-")) return;
+    const token = await getToken();
+    await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${fromDay.dayId}/items/${itemId}/move`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ target_day_id: targetDayId }),
+    });
+    setItinerary((prev) => {
+      const item = prev.days
+        .find((d) => d.dayNumber === fromDayNumber)
+        ?.items.find((i) => (i.itemId ?? i.id) === itemId);
+      if (!item) return prev;
+      return {
+        ...prev,
+        days: prev.days.map((d) => {
+          if (d.dayNumber === fromDayNumber)
+            return { ...d, items: d.items.filter((i) => (i.itemId ?? i.id) !== itemId) };
+          if (d.dayId === targetDayId)
+            return { ...d, items: [...d.items, item] };
+          return d;
+        }),
+      };
+    });
+  }
+
   async function removeFromItinerary(itemId: string, dayNumber: number) {
     if (tripStatus !== "DRAFT") return; // trip locked
     const day = itinerary.days.find((d) => d.dayNumber === dayNumber);
@@ -501,6 +564,8 @@ function TripPageContent() {
         itinerary={itinerary}
         onRemove={removeFromItinerary}
         onReorder={reorderItinerary}
+        onEdit={tripStatus === "DRAFT" ? editItineraryItem : undefined}
+        onMove={tripStatus === "DRAFT" ? moveItineraryItem : undefined}
         savedHotel={savedHotel}
         savedFlight={savedFlight}
         readOnly={tripStatus !== "DRAFT"}

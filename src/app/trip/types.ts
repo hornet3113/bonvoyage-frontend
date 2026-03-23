@@ -10,6 +10,10 @@ export type ItineraryItem = {
   rating?: number | null;
   priceLevel?: string | null;
   description?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  estimatedCost?: number | null;
+  notes?: string | null;
 };
 
 export type TripDay = {

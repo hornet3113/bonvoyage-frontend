@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import {
   IoCalendar, IoCompass, IoRestaurant, IoBed, IoAirplane,
   IoArrowForward, IoLocationSharp, IoStar, IoTrash, IoMap, IoReorderThree, IoClose,
+  IoPencil, IoSwapHorizontal,
 } from "react-icons/io5";
 import type { TripItinerary, ItineraryItem } from "../types";
 import {
@@ -21,10 +22,14 @@ const ItineraryMap = dynamic(() => import("./ItineraryMap"), { ssr: false });
 type SavedHotel = { name: string; imageUrl: string | null; price: string };
 type SavedFlight = { airline: string; origin: string | null; destination: string | null; departure: string | null; price: number | null };
 
+type EditFields = { start_time?: string; end_time?: string; estimated_cost?: number; notes?: string };
+
 type Props = {
   itinerary: TripItinerary;
   onRemove: (itemId: string, dayNumber: number) => void;
   onReorder?: (dayNumber: number, items: ItineraryItem[]) => void;
+  onEdit?: (itemId: string, dayNumber: number, fields: EditFields) => Promise<void>;
+  onMove?: (itemId: string, fromDayNumber: number, targetDayId: string) => Promise<void>;
   savedHotel?: SavedHotel | null;
   savedFlight?: SavedFlight | null;
   center?: { lat: number; lng: number };
@@ -36,8 +41,55 @@ function formatTime(iso: string | null) {
   return new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-export default function ItinerarySection({ itinerary, onRemove, onReorder, savedHotel, savedFlight, center, readOnly = false }: Props) {
+export default function ItinerarySection({ itinerary, onRemove, onReorder, onEdit, onMove, savedHotel, savedFlight, center, readOnly = false }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // ── Edit modal state ──
+  const [editingItem, setEditingItem] = useState<{ item: ItineraryItem; dayNumber: number } | null>(null);
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [editCost, setEditCost] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+
+  // ── Move modal state ──
+  const [movingItem, setMovingItem] = useState<{ item: ItineraryItem; fromDayNumber: number } | null>(null);
+  const [moveSaving, setMoveSaving] = useState(false);
+
+  function openEdit(item: ItineraryItem, dayNumber: number) {
+    setEditingItem({ item, dayNumber });
+    setEditStartTime(item.startTime ?? "");
+    setEditEndTime(item.endTime ?? "");
+    setEditCost(item.estimatedCost != null ? String(item.estimatedCost) : "");
+    setEditNotes(item.notes ?? "");
+  }
+
+  async function handleSaveEdit() {
+    if (!editingItem || !onEdit) return;
+    setEditSaving(true);
+    const fields: EditFields = {};
+    if (editStartTime) fields.start_time = editStartTime;
+    if (editEndTime) fields.end_time = editEndTime;
+    if (editCost !== "") fields.estimated_cost = parseFloat(editCost);
+    if (editNotes !== "") fields.notes = editNotes;
+    try {
+      await onEdit(editingItem.item.itemId ?? editingItem.item.id, editingItem.dayNumber, fields);
+      setEditingItem(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleMove(targetDayId: string) {
+    if (!movingItem || !onMove) return;
+    setMoveSaving(true);
+    try {
+      await onMove(movingItem.item.itemId ?? movingItem.item.id, movingItem.fromDayNumber, targetDayId);
+      setMovingItem(null);
+    } finally {
+      setMoveSaving(false);
+    }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -213,6 +265,10 @@ export default function ItinerarySection({ itinerary, onRemove, onReorder, saved
                       selected={selectedId === item.id}
                       onSelect={() => setSelectedId(item.type !== "flight" ? item.id : null)}
                       onRemove={() => onRemove(item.itemId ?? item.id, day.dayNumber)}
+                      onEdit={!readOnly && onEdit ? () => openEdit(item, day.dayNumber) : undefined}
+                      onMove={!readOnly && onMove && itinerary.days.filter((d) => !d.dayId.startsWith("placeholder-")).length > 1
+                        ? () => setMovingItem({ item, fromDayNumber: day.dayNumber })
+                        : undefined}
                       readOnly={readOnly}
                     />
                   ))}
@@ -222,6 +278,97 @@ export default function ItinerarySection({ itinerary, onRemove, onReorder, saved
           </div>
         ))}
       </div>
+
+      {/* ── Edit modal ── */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="font-bold text-gray-800 text-sm">Editar actividad</h3>
+              <button onClick={() => setEditingItem(null)} className="p-1 rounded-full hover:bg-gray-100">
+                <IoClose className="text-gray-400 text-lg" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <p className="text-xs text-gray-500 truncate font-medium">{editingItem.item.name}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Hora inicio</label>
+                  <input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)}
+                    className="w-full mt-1 px-2 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Hora fin</label>
+                  <input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)}
+                    className="w-full mt-1 px-2 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Costo estimado (USD)</label>
+                <input type="number" min={0} value={editCost} onChange={(e) => setEditCost(e.target.value)}
+                  placeholder="0"
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+              <div>
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Notas</label>
+                <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)}
+                  rows={2} placeholder="Reservación, tips..."
+                  className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              </div>
+            </div>
+            <div className="flex gap-2 px-5 pb-5">
+              <button onClick={() => setEditingItem(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-semibold">
+                Cancelar
+              </button>
+              <button onClick={handleSaveEdit} disabled={editSaving}
+                className="flex-1 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-white text-sm font-semibold">
+                {editSaving ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Move modal ── */}
+      {movingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="font-bold text-gray-800 text-sm">Mover a otro día</h3>
+              <button onClick={() => setMovingItem(null)} className="p-1 rounded-full hover:bg-gray-100">
+                <IoClose className="text-gray-400 text-lg" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <p className="text-xs text-gray-500 truncate font-medium">{movingItem.item.name}</p>
+              <p className="text-[10px] text-gray-400">Actualmente en <span className="font-semibold text-gray-600">Día {movingItem.fromDayNumber}</span></p>
+              <div className="space-y-1.5">
+                {itinerary.days
+                  .filter((d) => d.dayNumber !== movingItem.fromDayNumber && !d.dayId.startsWith("placeholder-"))
+                  .map((d) => (
+                    <button key={d.dayId} onClick={() => handleMove(d.dayId)} disabled={moveSaving}
+                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-sm text-gray-700 disabled:opacity-50 transition-colors">
+                      <span className="font-semibold">Día {d.dayNumber}</span>
+                      {d.date && (
+                        <span className="text-xs text-gray-400">
+                          {new Date(d.date + "T00:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" })}
+                        </span>
+                      )}
+                    </button>
+                  ))
+                }
+              </div>
+            </div>
+            <div className="px-5 pb-5">
+              <button onClick={() => setMovingItem(null)}
+                className="w-full py-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-semibold">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Right: sticky map + detail panel ── */}
       {showMap && (
@@ -331,6 +478,8 @@ function SortableItineraryCard(props: {
   selected: boolean;
   onSelect: () => void;
   onRemove: () => void;
+  onEdit?: () => void;
+  onMove?: () => void;
   readOnly?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -359,6 +508,8 @@ function ItineraryCard({
   selected,
   onSelect,
   onRemove,
+  onEdit,
+  onMove,
   readOnly = false,
   dragHandleProps,
 }: {
@@ -366,6 +517,8 @@ function ItineraryCard({
   selected: boolean;
   onSelect: () => void;
   onRemove: () => void;
+  onEdit?: () => void;
+  onMove?: () => void;
   readOnly?: boolean;
   dragHandleProps?: React.HTMLAttributes<HTMLElement>;
 }) {
@@ -469,6 +622,30 @@ function ItineraryCard({
           <IoLocationSharp className="text-gray-400 text-[9px] flex-shrink-0 mt-0.5" />
           <p className="text-[9px] text-gray-400 line-clamp-1">{item.address}</p>
         </div>
+
+        {/* Edit / Move actions */}
+        {!readOnly && (onEdit || onMove) && (
+          <div className="flex gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {onEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                title="Editar"
+                className="flex-1 flex items-center justify-center gap-0.5 py-1 rounded-lg bg-gray-50 hover:bg-blue-50 hover:text-blue-500 text-gray-400 text-[9px] transition-colors"
+              >
+                <IoPencil className="text-[9px]" /> Editar
+              </button>
+            )}
+            {onMove && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onMove(); }}
+                title="Mover a otro día"
+                className="flex-1 flex items-center justify-center gap-0.5 py-1 rounded-lg bg-gray-50 hover:bg-purple-50 hover:text-purple-500 text-gray-400 text-[9px] transition-colors"
+              >
+                <IoSwapHorizontal className="text-[9px]" /> Mover
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
