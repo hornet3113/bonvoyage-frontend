@@ -69,6 +69,16 @@ export default function ItinerarySection({
   function selectItem(id: string | null) {
     setSelectedId(id);
     setShowWeeklyHours(false);
+    if (id) {
+      const found = itinerary.days.flatMap(d => d.items).find(i => i.id === id);
+      console.log("[ItinerarySection] item seleccionado:", JSON.stringify({
+        id: found?.id,
+        isOpenNow: found?.isOpenNow,
+        todayHours: found?.todayHours,
+        weeklyHours: found?.weeklyHours,
+        startTime: found?.startTime,
+      }, null, 2));
+    }
   }
 
   function openEdit(item: ItineraryItem, dayNumber: number) {
