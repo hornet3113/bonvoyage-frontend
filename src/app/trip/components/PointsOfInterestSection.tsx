@@ -19,7 +19,9 @@ type POI = {
   photoUrl: string | null;
   lat: number;
   lng: number;
-  openingHours?: string[] | null;
+  isOpenNow?: boolean | null;
+  todayHours?: string | null;
+  weeklyHours?: string[] | null;
 };
 
 type Destination = {
@@ -102,6 +104,9 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
       rating: poi.rating,
       priceLevel: poi.priceLevel,
       description: poi.description,
+      isOpenNow: poi.isOpenNow,
+      todayHours: poi.todayHours,
+      weeklyHours: poi.weeklyHours,
     };
   }
 
@@ -259,25 +264,6 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
                     <p className="text-xs text-gray-500">{selectedPlace.address}</p>
                   </div>
 
-                  {selectedPlace.openingHours && selectedPlace.openingHours.length > 0 && (
-                    <div>
-                      <button
-                        onClick={() => setShowHours((v) => !v)}
-                        className="flex items-center gap-1 text-[10px] text-blue-500 hover:text-blue-700 font-medium"
-                      >
-                        <IoTimeOutline className="text-xs" />
-                        {showHours ? "Ocultar horarios" : "Ver horarios"}
-                      </button>
-                      {showHours && (
-                        <ul className="mt-1 space-y-0.5">
-                          {selectedPlace.openingHours.map((line, i) => (
-                            <li key={i} className="text-[10px] text-gray-500 leading-relaxed">{line}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-
                   {readOnly ? (
                     <div className="w-full mt-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-400 border border-gray-200">
                       Viaje confirmado — solo lectura
@@ -299,28 +285,73 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
                     </button>
                   ) : (
                     <div className="mt-1 p-2 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
-                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
-                        Selecciona el día
-                      </p>
-                      <div className="grid grid-cols-4 gap-1">
-                        {days.map((d) => (
-                          <button
-                            key={d.dayId}
-                            onClick={() => handleDetailAddToDay(selectedPlace, d.dayNumber)}
-                            className="text-xs font-medium text-gray-700 hover:bg-blue-500 hover:text-white rounded-lg py-1.5 transition-colors bg-white border border-gray-200"
-                          >
-                            {d.dayNumber}
-                          </button>
-                        ))}
+
+                      {/* Horario de operación */}
+                      {(selectedPlace.isOpenNow != null || selectedPlace.todayHours) && (
+                        <div className="bg-white rounded-lg p-2 border border-gray-100">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <div className="flex items-center gap-1">
+                              <IoTimeOutline className="text-gray-400 text-[10px]" />
+                              <span className="text-[10px] font-semibold text-gray-500">Horario de operación</span>
+                            </div>
+                            {selectedPlace.isOpenNow != null && (
+                              <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
+                                selectedPlace.isOpenNow ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
+                              }`}>
+                                {selectedPlace.isOpenNow ? "Abierto" : "Cerrado"}
+                              </span>
+                            )}
+                          </div>
+                          {selectedPlace.todayHours && (
+                            <p className="text-[10px] text-gray-500">{selectedPlace.todayHours}</p>
+                          )}
+                          {selectedPlace.weeklyHours && selectedPlace.weeklyHours.length > 0 && (
+                            <>
+                              <button
+                                onClick={() => setShowHours((v) => !v)}
+                                className="text-[9px] text-blue-500 hover:text-blue-700 mt-0.5"
+                              >
+                                {showHours ? "Ver menos" : "Ver semana completa"}
+                              </button>
+                              {showHours && (
+                                <ul className="mt-1 space-y-0.5">
+                                  {selectedPlace.weeklyHours.map((line: string, i: number) => (
+                                    <li key={i} className="text-[9px] text-gray-500">{line}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Selector de día */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1">
+                          Selecciona el día
+                        </p>
+                        <div className="grid grid-cols-4 gap-1">
+                          {days.map((d) => (
+                            <button
+                              key={d.dayId}
+                              onClick={() => handleDetailAddToDay(selectedPlace, d.dayNumber)}
+                              className="text-xs font-medium text-gray-700 hover:bg-blue-500 hover:text-white rounded-lg py-1.5 transition-colors bg-white border border-gray-200"
+                            >
+                              {d.dayNumber}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+
+                      {/* Hora de visita (opcional) */}
                       <div className="flex gap-1.5">
                         <div className="flex-1">
-                          <label className="text-[9px] text-gray-400 uppercase tracking-wide block mb-0.5">Inicio</label>
+                          <label className="text-[9px] text-gray-400 uppercase tracking-wide block mb-0.5">Hora visita</label>
                           <input
                             type="time"
                             value={addStartTime}
                             onChange={(e) => setAddStartTime(e.target.value)}
-                            className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                            className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 bg-white"
                           />
                         </div>
                         <div className="flex-1">
@@ -329,16 +360,17 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
                             type="time"
                             value={addEndTime}
                             onChange={(e) => setAddEndTime(e.target.value)}
-                            className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                            className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 bg-white"
                           />
                         </div>
                       </div>
+
                       <textarea
                         value={addNote}
                         onChange={(e) => setAddNote(e.target.value)}
                         placeholder="Nota opcional..."
                         rows={2}
-                        className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 resize-none"
+                        className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 resize-none bg-white"
                       />
                       <button
                         onClick={() => setDetailPickerOpen(false)}

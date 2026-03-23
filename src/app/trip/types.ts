@@ -14,6 +14,9 @@ export type ItineraryItem = {
   endTime?: string | null;
   estimatedCost?: number | null;
   notes?: string | null;
+  isOpenNow?: boolean | null;
+  todayHours?: string | null;
+  weeklyHours?: string[] | null;
 };
 
 export type TripDay = {
