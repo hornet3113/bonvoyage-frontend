@@ -156,43 +156,25 @@ export default function HotelsSection({
 
   async function handleSaveToItinerary() {
     if (!selectedHotel || !tripId) return;
-    const days = getMatchingDays();
-    if (!days.length) return;
     setSaving(true);
     try {
       const token = await getToken();
 
-      // Step 1: upsert place reference (una sola vez)
-      const saveRes = await fetch(`${BACKEND}/api/v1/places/save`, {
+      const res = await fetch(`${BACKEND}/api/v1/hotels/save`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          external_id: selectedHotel.id ?? `hotel-${selectedHotel.name}`,
-          category: "HOTEL",
+          id: selectedHotel.id ?? `hotel-${selectedHotel.name}`,
           name: selectedHotel.name,
           latitude: selectedHotel.latitude ?? 0,
           longitude: selectedHotel.longitude ?? 0,
           rating: typeof selectedHotel.rating === "number" ? selectedHotel.rating : null,
-          photo_url: selectedHotel.imageUrl ?? null,
+          imageUrl: selectedHotel.imageUrl ?? null,
+          price: parseFloat(String(selectedHotel.price).replace(/[^0-9.]/g, "")) || 0,
+          trip_id: tripId,
         }),
       });
-      if (!saveRes.ok) throw new Error("Error al guardar referencia");
-      const { reference_id } = await saveRes.json();
-
-      // Step 2: agregar el hotel a cada día del rango check-in → check-out
-      await Promise.all(
-        days.map((d) =>
-          fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${d.dayId}/items`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify({
-              item_type: "PLACE",
-              place_reference_id: reference_id,
-              estimated_cost: parseFloat(String(selectedHotel.price).replace(/[^0-9.]/g, "")) || undefined,
-            }),
-          })
-        )
-      );
+      if (!res.ok) throw new Error("Error al guardar hotel");
 
       setSavedId(selectedHotel.id ?? selectedId);
       onHotelSave?.({ name: selectedHotel.name, imageUrl: selectedHotel.imageUrl, price: selectedHotel.price, externalId: selectedHotel.id ?? undefined });
