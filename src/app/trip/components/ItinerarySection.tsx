@@ -37,9 +37,13 @@ type Props = {
 
 function formatTime(t: string | null | undefined): string {
   if (!t) return "";
-  if (/^\d{2}:\d{2}$/.test(t)) return t;
+  // HH:MM or HH:MM:SS — just return the first 5 chars
+  if (/^\d{2}:\d{2}(:\d{2})?$/.test(t)) return t.slice(0, 5);
+  // ISO datetime string
   try {
-    return new Date(t).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
+    const d = new Date(t);
+    if (isNaN(d.getTime())) return t;
+    return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
   } catch { return t; }
 }
 
