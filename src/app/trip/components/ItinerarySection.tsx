@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useAuth } from "@clerk/nextjs";
 import {
   IoCalendar, IoCompass, IoRestaurant, IoBed, IoAirplane,
   IoArrowForward, IoLocationSharp, IoStar, IoTrash, IoMap, IoReorderThree, IoClose,
@@ -18,6 +19,10 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 const ItineraryMap = dynamic(() => import("./ItineraryMap"), { ssr: false });
+
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+
+type LiveHours = { isOpenNow: boolean | null; todayHours: string | null; weeklyHours: string[] | null };
 
 type SavedHotel = { name: string; imageUrl: string | null; price: string };
 type SavedFlight = { airline: string; origin: string | null; destination: string | null; departure: string | null; price: number | null };
@@ -51,8 +56,10 @@ export default function ItinerarySection({
   itinerary, onRemove, onReorder, onEdit, onMove,
   savedHotel, savedFlight, center, readOnly = false,
 }: Props) {
+  const { getToken } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showWeeklyHours, setShowWeeklyHours] = useState(false);
+  const [liveHours, setLiveHours] = useState<LiveHours | null>(null);
 
   // Edit modal
   const [editingItem, setEditingItem] = useState<{ item: ItineraryItem; dayNumber: number } | null>(null);
@@ -66,19 +73,42 @@ export default function ItinerarySection({
   const [movingItem, setMovingItem] = useState<{ item: ItineraryItem; fromDayNumber: number } | null>(null);
   const [moveSaving, setMoveSaving] = useState(false);
 
+  // Fetch hours from Google Places when a POI/restaurant is selected and hours aren't cached
+  useEffect(() => {
+    if (!selectedId) { setLiveHours(null); return; }
+    const item = itinerary.days.flatMap(d => d.items).find(i => i.id === selectedId);
+    if (!item || item.type === "hotel" || item.type === "flight") { setLiveHours(null); return; }
+    // If already stored in item, use it directly
+    if (item.isOpenNow != null || item.todayHours) {
+      setLiveHours({ isOpenNow: item.isOpenNow ?? null, todayHours: item.todayHours ?? null, weeklyHours: item.weeklyHours ?? null });
+      return;
+    }
+    // Fetch on-demand
+    let cancelled = false;
+    async function fetchHours() {
+      const token = await getToken();
+      const endpoint = item!.type === "restaurant" ? "restaurants" : "poi";
+      const res = await fetch(`${BACKEND}/api/v1/${endpoint}?lat=${item!.lat}&lng=${item!.lng}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok || cancelled) return;
+      const data = await res.json();
+      const found = (data.places ?? []).find((p: { id: string }) => p.id === item!.id);
+      if (!cancelled) setLiveHours(found ? { isOpenNow: found.isOpenNow ?? null, todayHours: found.todayHours ?? null, weeklyHours: found.weeklyHours ?? null } : null);
+    }
+    fetchHours().catch(() => { if (!cancelled) setLiveHours(null); });
+    return () => { cancelled = true; };
+  }, [selectedId]);
+
   function selectItem(id: string | null) {
     setSelectedId(id);
     setShowWeeklyHours(false);
-    if (id) {
-      const found = itinerary.days.flatMap(d => d.items).find(i => i.id === id);
-      if (found) console.log(`[lat/lng] ${found.name}: lat=${found.lat}, lng=${found.lng}`);
-    }
   }
 
   function openEdit(item: ItineraryItem, dayNumber: number) {
     setEditingItem({ item, dayNumber });
-    setEditStartTime(item.startTime ?? "");
-    setEditEndTime(item.endTime ?? "");
+    setEditStartTime(item.startTime ? item.startTime.slice(0, 5) : "");
+    setEditEndTime(item.endTime ? item.endTime.slice(0, 5) : "");
     setEditCost(item.estimatedCost != null ? String(item.estimatedCost) : "");
     setEditNotes(item.notes ?? "");
   }
@@ -87,8 +117,8 @@ export default function ItinerarySection({
     if (!editingItem || !onEdit) return;
     setEditSaving(true);
     const fields: EditFields = {};
-    if (editStartTime) fields.start_time = editStartTime;
-    if (editEndTime) fields.end_time = editEndTime;
+    if (editStartTime) fields.start_time = editStartTime.slice(0, 5);
+    if (editEndTime) fields.end_time = editEndTime.slice(0, 5);
     if (editCost !== "") fields.estimated_cost = parseFloat(editCost);
     if (editNotes !== "") fields.notes = editNotes;
     try {
@@ -506,26 +536,26 @@ export default function ItinerarySection({
                   </div>
                 </div>
 
-                {/* Horario de operación */}
-                {(selectedFullItem.item.isOpenNow != null || selectedFullItem.item.todayHours) && (
+                {/* Horario de operación — usa liveHours (fetched on-demand) */}
+                {liveHours && (liveHours.isOpenNow != null || liveHours.todayHours) && (
                   <div className="px-3 pb-2 border-t border-gray-50 pt-2">
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-1">
                         <IoTimeOutline className="text-gray-400 text-[10px]" />
                         <span className="text-[10px] font-semibold text-gray-500">Horario de operación</span>
                       </div>
-                      {selectedFullItem.item.isOpenNow != null && (
+                      {liveHours.isOpenNow != null && (
                         <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                          selectedFullItem.item.isOpenNow ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
+                          liveHours.isOpenNow ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
                         }`}>
-                          {selectedFullItem.item.isOpenNow ? "Abierto" : "Cerrado"}
+                          {liveHours.isOpenNow ? "Abierto" : "Cerrado"}
                         </span>
                       )}
                     </div>
-                    {selectedFullItem.item.todayHours && (
-                      <p className="text-[10px] text-gray-500">{selectedFullItem.item.todayHours}</p>
+                    {liveHours.todayHours && (
+                      <p className="text-[10px] text-gray-500">{liveHours.todayHours}</p>
                     )}
-                    {selectedFullItem.item.weeklyHours && selectedFullItem.item.weeklyHours.length > 0 && (
+                    {liveHours.weeklyHours && liveHours.weeklyHours.length > 0 && (
                       <>
                         <button
                           onClick={() => setShowWeeklyHours((v) => !v)}
@@ -535,7 +565,7 @@ export default function ItinerarySection({
                         </button>
                         {showWeeklyHours && (
                           <ul className="mt-1 space-y-0.5">
-                            {selectedFullItem.item.weeklyHours.map((line, i) => (
+                            {liveHours.weeklyHours.map((line, i) => (
                               <li key={i} className="text-[9px] text-gray-500">{line}</li>
                             ))}
                           </ul>
