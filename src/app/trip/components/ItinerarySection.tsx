@@ -26,13 +26,15 @@ type LiveHours = { isOpenNow: boolean | null; todayHours: string | null; weeklyH
 
 type Budget = {
   ticket_id: string;
+  trip_id: string;
   presupuesto_total: number;
   costo_acumulado: number;
   balance_disponible: number;
   total_lugares: number;
   total_vuelos: number;
   total_items: number;
-  estado_presupuesto: string;
+  estado_presupuesto: "SIN_DATOS" | "EN_RANGO" | "ADVERTENCIA" | "EXCEDIDO";
+  updated_at: string;
 };
 
 type SavedHotel = { name: string; imageUrl: string | null; price: string };
@@ -528,24 +530,27 @@ export default function ItinerarySection({
             </div>
 
             {/* Estado badge + presupuesto total */}
-            <div className={`px-5 py-4 border-b ${budget.estado_presupuesto === "EXCEDIDO" ? "bg-red-50 border-red-100" : "bg-blue-50 border-blue-100"}`}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Presupuesto total</p>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                  budget.estado_presupuesto === "EXCEDIDO"
-                    ? "bg-red-100 text-red-600"
-                    : budget.estado_presupuesto === "EN_RANGO"
-                    ? "bg-green-100 text-green-600"
-                    : "bg-gray-100 text-gray-500"
-                }`}>
-                  {budget.estado_presupuesto === "EXCEDIDO" ? "Excedido" : budget.estado_presupuesto === "EN_RANGO" ? "En rango" : budget.estado_presupuesto}
-                </span>
-              </div>
-              <p className="text-3xl font-bold text-gray-800">
-                ${budget.presupuesto_total.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                <span className="text-sm font-normal text-gray-400 ml-1">USD</span>
-              </p>
-            </div>
+            {(() => {
+              const ESTADO: Record<string, { bg: string; badge: string; label: string }> = {
+                EN_RANGO:    { bg: "bg-blue-50 border-blue-100",   badge: "bg-green-100 text-green-700",  label: "En rango" },
+                ADVERTENCIA: { bg: "bg-amber-50 border-amber-100", badge: "bg-amber-100 text-amber-700",  label: "Advertencia" },
+                EXCEDIDO:    { bg: "bg-red-50 border-red-100",     badge: "bg-red-100 text-red-600",      label: "Excedido" },
+                SIN_DATOS:   { bg: "bg-gray-50 border-gray-100",   badge: "bg-gray-100 text-gray-500",    label: "Sin datos" },
+              };
+              const s = ESTADO[budget.estado_presupuesto] ?? ESTADO.SIN_DATOS;
+              return (
+                <div className={`px-5 py-4 border-b ${s.bg}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Presupuesto total</p>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.badge}`}>{s.label}</span>
+                  </div>
+                  <p className="text-3xl font-bold text-gray-800">
+                    ${budget.presupuesto_total.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    <span className="text-sm font-normal text-gray-400 ml-1">USD</span>
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Costo / Balance */}
             <div className="flex border-b border-gray-100">
