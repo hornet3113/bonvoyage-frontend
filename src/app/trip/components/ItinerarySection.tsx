@@ -25,16 +25,16 @@ const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 type LiveHours = { isOpenNow: boolean | null; todayHours: string | null; weeklyHours: string[] | null };
 
 type Budget = {
-  ticket_id: string;
+  ticket_id?: string;
   trip_id: string;
-  presupuesto_total: number;
-  costo_acumulado: number;
-  balance_disponible: number;
-  total_lugares: number;
-  total_vuelos: number;
+  total_budget: number;
+  accumulated_cost: number;
+  available_balance: number;
+  total_places: number;
+  total_flights: number;
   total_items: number;
-  estado_presupuesto: "SIN_DATOS" | "EN_RANGO" | "ADVERTENCIA" | "EXCEDIDO";
-  updated_at: string;
+  budget_status: string;
+  updated_at?: string;
 };
 
 type SavedHotel = { name: string; imageUrl: string | null; price: string };
@@ -354,7 +354,7 @@ export default function ItinerarySection({
             >
               <IoWallet className="text-blue-500 text-sm" />
               <span className="text-xs font-bold text-blue-600">
-                ${(budget.costo_acumulado ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD
+                ${(budget.accumulated_cost ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD
               </span>
               <IoChevronForward className="text-gray-300 text-xs group-hover:text-blue-400 transition-colors" />
             </button>
@@ -539,7 +539,7 @@ export default function ItinerarySection({
                 EXCEDIDO:    { bg: "bg-red-50 border-red-100",     badge: "bg-red-100 text-red-600",      label: "Excedido" },
                 SIN_DATOS:   { bg: "bg-gray-50 border-gray-100",   badge: "bg-gray-100 text-gray-500",    label: "Sin datos" },
               };
-              const s = ESTADO[budget.estado_presupuesto] ?? ESTADO.SIN_DATOS;
+              const s = ESTADO[budget.budget_status] ?? ESTADO.SIN_DATOS;
               return (
                 <div className={`px-5 py-4 border-b ${s.bg}`}>
                   <div className="flex items-center justify-between mb-2">
@@ -547,7 +547,7 @@ export default function ItinerarySection({
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.badge}`}>{s.label}</span>
                   </div>
                   <p className="text-3xl font-bold text-gray-800">
-                    ${(budget.presupuesto_total ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    ${(budget.total_budget ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     <span className="text-sm font-normal text-gray-400 ml-1">USD</span>
                   </p>
                 </div>
@@ -559,13 +559,13 @@ export default function ItinerarySection({
               <div className="flex-1 px-5 py-4 border-r border-gray-100">
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Costo acumulado</p>
                 <p className="text-xl font-bold text-gray-800">
-                  ${(budget.costo_acumulado ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  ${(budget.accumulated_cost ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </p>
               </div>
               <div className="flex-1 px-5 py-4">
                 <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Balance disponible</p>
-                <p className={`text-xl font-bold ${(budget.balance_disponible ?? 0) < 0 ? "text-red-500" : "text-green-600"}`}>
-                  ${(budget.balance_disponible ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                <p className={`text-xl font-bold ${(budget.available_balance ?? 0) < 0 ? "text-red-500" : "text-green-600"}`}>
+                  ${(budget.available_balance ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </p>
               </div>
             </div>
@@ -578,14 +578,14 @@ export default function ItinerarySection({
                   <IoAirplane className="text-blue-400 text-sm" />
                   <span className="text-sm text-gray-600">Vuelos</span>
                 </div>
-                <span className="text-sm font-semibold text-gray-700">{budget.total_vuelos}</span>
+                <span className="text-sm font-semibold text-gray-700">{budget.total_flights}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b border-gray-50">
                 <div className="flex items-center gap-2">
                   <IoCompass className="text-blue-400 text-sm" />
                   <span className="text-sm text-gray-600">Lugares</span>
                 </div>
-                <span className="text-sm font-semibold text-gray-700">{budget.total_lugares}</span>
+                <span className="text-sm font-semibold text-gray-700">{budget.total_places}</span>
               </div>
               <div className="flex items-center justify-between py-2">
                 <div className="flex items-center gap-2">
