@@ -380,24 +380,20 @@ export default function ItinerarySection({
             </div>
             <div className="px-5 py-4 space-y-3">
               <p className="text-xs text-gray-500 truncate font-medium">{editingItem.item.name}</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Hora inicio</label>
-                  <input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)}
-                    className="w-full mt-1 px-2 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+              {editingItem.item.type !== "hotel" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Hora inicio</label>
+                    <input type="time" value={editStartTime} onChange={(e) => setEditStartTime(e.target.value)}
+                      className="w-full mt-1 px-2 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Hora fin</label>
+                    <input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)}
+                      className="w-full mt-1 px-2 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Hora fin</label>
-                  <input type="time" value={editEndTime} onChange={(e) => setEditEndTime(e.target.value)}
-                    className="w-full mt-1 px-2 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-                </div>
-              </div>
-              <div>
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Costo estimado (USD)</label>
-                <input type="number" min={0} value={editCost} onChange={(e) => setEditCost(e.target.value)}
-                  placeholder="0"
-                  className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />
-              </div>
+              )}
               <div>
                 <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Notas</label>
                 <textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)}
