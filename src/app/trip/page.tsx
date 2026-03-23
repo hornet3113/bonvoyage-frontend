@@ -98,9 +98,16 @@ function TripPageContent() {
     setLoadingTrip(true);
     try {
       const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
+      // Retry once on 500 — race condition right after trip creation
+      let res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 500) {
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const json = await res.json();
       const data = json.data ?? json;
