@@ -400,12 +400,9 @@ function TripPageContent() {
         body: JSON.stringify({
           item_type: "PLACE",
           place_reference_id: reference_id,
-          start_time: options?.start_time ?? null,
-          end_time: options?.end_time ?? null,
-          notes: options?.notes ?? null,
-          todayHours: item.todayHours ?? null,
-          weeklyHours: item.weeklyHours ?? null,
-          isOpenNow: item.isOpenNow ?? null,
+          ...(options?.start_time && { start_time: options.start_time }),
+          ...(options?.end_time   && { end_time:   options.end_time }),
+          ...(options?.notes      && { notes:       options.notes }),
         }),
       });
     } catch {
