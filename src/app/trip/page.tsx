@@ -335,7 +335,7 @@ function TripPageContent() {
   }
 
   async function addToItinerary(item: ItineraryItem, dayNumber: number, options?: { start_time?: string; end_time?: string; notes?: string }) {
-    if (tripStatus !== "DRAFT") return; // trip locked
+    if (!tripId || tripStatus !== "DRAFT") return;
     const day = itinerary.days.find((d) => d.dayNumber === dayNumber);
     if (day?.items.some((i) => i.id === item.id)) return; // already added
 
@@ -424,6 +424,7 @@ function TripPageContent() {
     dayNumber: number,
     fields: { start_time?: string; end_time?: string; estimated_cost?: number; notes?: string }
   ) {
+    if (!tripId) return;
     const day = itinerary.days.find((d) => d.dayNumber === dayNumber);
     if (!day || day.dayId.startsWith("placeholder-")) return;
     const token = await getToken();
@@ -456,6 +457,7 @@ function TripPageContent() {
   }
 
   async function moveItineraryItem(itemId: string, fromDayNumber: number, targetDayId: string) {
+    if (!tripId) return;
     const fromDay = itinerary.days.find((d) => d.dayNumber === fromDayNumber);
     if (!fromDay || fromDay.dayId.startsWith("placeholder-")) return;
     const token = await getToken();
