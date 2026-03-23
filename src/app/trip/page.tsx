@@ -320,7 +320,7 @@ function TripPageContent() {
     }
   }
 
-  async function addToItinerary(item: ItineraryItem, dayNumber: number) {
+  async function addToItinerary(item: ItineraryItem, dayNumber: number, options?: { start_time?: string; end_time?: string; notes?: string }) {
     if (tripStatus !== "DRAFT") return; // trip locked
     const day = itinerary.days.find((d) => d.dayNumber === dayNumber);
     if (day?.items.some((i) => i.id === item.id)) return; // already added
@@ -383,7 +383,13 @@ function TripPageContent() {
       await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${day.dayId}/items`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ item_type: "PLACE", place_reference_id: reference_id }),
+        body: JSON.stringify({
+          item_type: "PLACE",
+          place_reference_id: reference_id,
+          start_time: options?.start_time ?? null,
+          end_time: options?.end_time ?? null,
+          notes: options?.notes ?? null,
+        }),
       });
     } catch {
       // silent — optimistic item stays visible

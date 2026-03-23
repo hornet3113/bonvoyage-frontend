@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "@clerk/nextjs";
-import { IoStar, IoLocationSharp, IoRestaurant, IoPricetag, IoSearch, IoAdd, IoCheckmark, IoCalendarOutline } from "react-icons/io5";
+import { IoStar, IoLocationSharp, IoRestaurant, IoPricetag, IoSearch, IoAdd, IoCheckmark, IoCalendarOutline, IoTimeOutline } from "react-icons/io5";
 import type { ItineraryItem, TripDay } from "../types";
 
 const POIMap = dynamic(() => import("./POIMap"), { ssr: false });
@@ -19,6 +19,7 @@ type Place = {
   photoUrl: string | null;
   lat: number;
   lng: number;
+  openingHours?: string[] | null;
 };
 
 type Destination = {
@@ -29,10 +30,12 @@ type Destination = {
   photoUrl: string | null;
 };
 
+type AddOptions = { start_time?: string; end_time?: string; notes?: string };
+
 type Props = {
   destination: Destination;
   tripDays?: TripDay[];
-  onAddToItinerary: (item: ItineraryItem, dayNumber: number) => void;
+  onAddToItinerary: (item: ItineraryItem, dayNumber: number, options?: AddOptions) => void;
   readOnly?: boolean;
 };
 
@@ -48,6 +51,10 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
   const [pickerOpenId, setPickerOpenId] = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [detailPickerOpen, setDetailPickerOpen] = useState(false);
+  const [addStartTime, setAddStartTime] = useState("");
+  const [addEndTime, setAddEndTime] = useState("");
+  const [addNote, setAddNote] = useState("");
+  const [showHours, setShowHours] = useState(false);
 
   useEffect(() => {
     async function fetchRestaurants() {
@@ -83,25 +90,50 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
 
   const selectedPlace = filtered.find((p) => p.id === selectedId) ?? null;
 
+  function buildItem(place: Place): ItineraryItem {
+    return {
+      id: place.id,
+      type: "restaurant",
+      name: place.name,
+      address: place.address,
+      lat: place.lat,
+      lng: place.lng,
+      photoUrl: place.photoUrl,
+      rating: place.rating,
+      priceLevel: place.priceLevel,
+      description: place.description,
+    };
+  }
+
   function handleAddToDay(place: Place, day: number) {
-    onAddToItinerary(
-      {
-        id: place.id,
-        type: "restaurant",
-        name: place.name,
-        address: place.address,
-        lat: place.lat,
-        lng: place.lng,
-        photoUrl: place.photoUrl,
-        rating: place.rating,
-        priceLevel: place.priceLevel,
-        description: place.description,
-      },
-      day
-    );
+    onAddToItinerary(buildItem(place), day);
     setAddedIds((prev) => new Set(prev).add(place.id));
     setPickerOpenId(null);
     setDetailPickerOpen(false);
+  }
+
+  function handleDetailAddToDay(place: Place, day: number) {
+    onAddToItinerary(buildItem(place), day, {
+      start_time: addStartTime || undefined,
+      end_time: addEndTime || undefined,
+      notes: addNote || undefined,
+    });
+    setAddedIds((prev) => new Set(prev).add(place.id));
+    setDetailPickerOpen(false);
+    setAddStartTime("");
+    setAddEndTime("");
+    setAddNote("");
+    setShowHours(false);
+  }
+
+  function selectPlace(id: string) {
+    setSelectedId(id);
+    setPickerOpenId(null);
+    setDetailPickerOpen(false);
+    setAddStartTime("");
+    setAddEndTime("");
+    setAddNote("");
+    setShowHours(false);
   }
 
   if (loading) {
@@ -153,7 +185,7 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
                   selected={selectedId === place.id}
                   added={addedIds.has(place.id)}
                   pickerOpen={pickerOpenId === place.id}
-                  onClick={() => { setSelectedId(place.id); setPickerOpenId(null); setDetailPickerOpen(false); }}
+                  onClick={() => selectPlace(place.id)}
                   onPickerToggle={() => setPickerOpenId(pickerOpenId === place.id ? null : place.id)}
                   onAddToDay={(day) => handleAddToDay(place, day)}
                 />
@@ -170,7 +202,7 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
             <POIMap
               places={filtered}
               selectedId={selectedId}
-              onSelectId={(id) => { setSelectedId(id); setDetailPickerOpen(false); }}
+              onSelectId={(id) => selectPlace(id)}
               center={{ lat: destination.lat, lng: destination.lng }}
             />
           </div>
@@ -222,13 +254,30 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
                     <p className="text-xs text-gray-600 leading-relaxed">{selectedPlace.description}</p>
                   )}
 
-                  {/* Address */}
                   <div className="flex items-start gap-1.5">
                     <IoLocationSharp className="text-gray-400 text-xs flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-gray-500">{selectedPlace.address}</p>
                   </div>
 
-                  {/* Add to itinerary */}
+                  {selectedPlace.openingHours && selectedPlace.openingHours.length > 0 && (
+                    <div>
+                      <button
+                        onClick={() => setShowHours((v) => !v)}
+                        className="flex items-center gap-1 text-[10px] text-blue-500 hover:text-blue-700 font-medium"
+                      >
+                        <IoTimeOutline className="text-xs" />
+                        {showHours ? "Ocultar horarios" : "Ver horarios"}
+                      </button>
+                      {showHours && (
+                        <ul className="mt-1 space-y-0.5">
+                          {selectedPlace.openingHours.map((line, i) => (
+                            <li key={i} className="text-[10px] text-gray-500 leading-relaxed">{line}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
                   {readOnly ? (
                     <div className="w-full mt-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-gray-100 text-gray-400 border border-gray-200">
                       Viaje confirmado — solo lectura
@@ -249,24 +298,51 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
                       )}
                     </button>
                   ) : (
-                    <div className="mt-1 p-2 bg-gray-50 rounded-xl border border-gray-100">
-                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">
+                    <div className="mt-1 p-2 bg-gray-50 rounded-xl border border-gray-100 space-y-2">
+                      <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
                         Selecciona el día
                       </p>
                       <div className="grid grid-cols-4 gap-1">
                         {days.map((d) => (
                           <button
                             key={d.dayId}
-                            onClick={() => handleAddToDay(selectedPlace, d.dayNumber)}
+                            onClick={() => handleDetailAddToDay(selectedPlace, d.dayNumber)}
                             className="text-xs font-medium text-gray-700 hover:bg-blue-500 hover:text-white rounded-lg py-1.5 transition-colors bg-white border border-gray-200"
                           >
                             {d.dayNumber}
                           </button>
                         ))}
                       </div>
+                      <div className="flex gap-1.5">
+                        <div className="flex-1">
+                          <label className="text-[9px] text-gray-400 uppercase tracking-wide block mb-0.5">Inicio</label>
+                          <input
+                            type="time"
+                            value={addStartTime}
+                            onChange={(e) => setAddStartTime(e.target.value)}
+                            className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-[9px] text-gray-400 uppercase tracking-wide block mb-0.5">Fin</label>
+                          <input
+                            type="time"
+                            value={addEndTime}
+                            onChange={(e) => setAddEndTime(e.target.value)}
+                            className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300"
+                          />
+                        </div>
+                      </div>
+                      <textarea
+                        value={addNote}
+                        onChange={(e) => setAddNote(e.target.value)}
+                        placeholder="Nota opcional..."
+                        rows={2}
+                        className="w-full text-[10px] border border-gray-200 rounded-lg px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-blue-300 resize-none"
+                      />
                       <button
                         onClick={() => setDetailPickerOpen(false)}
-                        className="w-full mt-1.5 text-[10px] text-gray-400 hover:text-gray-600"
+                        className="w-full text-[10px] text-gray-400 hover:text-gray-600"
                       >
                         Cancelar
                       </button>
