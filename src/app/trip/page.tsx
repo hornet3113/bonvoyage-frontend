@@ -734,39 +734,39 @@ function TripPageContent() {
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-400" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          <div className="absolute inset-0 flex flex-col justify-end p-7">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <h1 className="text-white text-5xl font-bold drop-shadow-lg leading-tight">
-                  {destination.name}
-                </h1>
-                {destination.country && (
-                  <p className="text-white/80 text-2xl font-medium mt-1 drop-shadow">
-                    {destination.country}
-                  </p>
-                )}
-                {loadingTrip && (
-                  <p className="text-white/60 text-sm mt-2">Cargando itinerario...</p>
-                )}
-                {tripError && (
-                  <p className="text-red-300 text-sm mt-2">{tripError}</p>
-                )}
-              </div>
-              {tripId && (
-                <button
-                  onClick={toggleFavorite}
-                  title={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
-                  className="flex-shrink-0 w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-colors"
-                >
-                  {isFavorite
-                    ? <IoHeart className="text-red-400 text-2xl" />
-                    : <IoHeartOutline className="text-white text-2xl" />
-                  }
-                </button>
-              )}
-            </div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/10 to-transparent" />
+
+          {/* Nombre y país — esquina superior izquierda */}
+          <div className="absolute top-6 left-7">
+            <h1 className="text-white text-4xl font-bold drop-shadow-lg leading-tight">
+              {destination.name}
+            </h1>
+            {destination.country && (
+              <p className="text-white/80 text-xl font-medium mt-1 drop-shadow">
+                {destination.country}
+              </p>
+            )}
+            {loadingTrip && (
+              <p className="text-white/60 text-sm mt-2">Cargando itinerario...</p>
+            )}
+            {tripError && (
+              <p className="text-red-300 text-sm mt-2">{tripError}</p>
+            )}
           </div>
+
+          {/* Favorito — esquina superior derecha */}
+          {tripId && (
+            <button
+              onClick={toggleFavorite}
+              title={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
+              className="absolute top-5 right-5 w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center hover:bg-black/50 transition-colors"
+            >
+              {isFavorite
+                ? <IoHeart className="text-red-400 text-2xl" />
+                : <IoHeartOutline className="text-white text-2xl" />
+              }
+            </button>
+          )}
         </div>
       </div>
 
