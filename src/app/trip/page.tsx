@@ -734,25 +734,7 @@ function TripPageContent() {
           ) : (
             <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-400" />
           )}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/10 to-transparent" />
-
-          {/* Nombre y país — esquina superior izquierda */}
-          <div className="absolute top-6 left-7">
-            <h1 className="text-white text-4xl font-bold drop-shadow-lg leading-tight">
-              {destination.name}
-            </h1>
-            {destination.country && (
-              <p className="text-white/80 text-xl font-medium mt-1 drop-shadow">
-                {destination.country}
-              </p>
-            )}
-            {loadingTrip && (
-              <p className="text-white/60 text-sm mt-2">Cargando itinerario...</p>
-            )}
-            {tripError && (
-              <p className="text-red-300 text-sm mt-2">{tripError}</p>
-            )}
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
           {/* Favorito — esquina superior derecha */}
           {tripId && (
@@ -767,6 +749,25 @@ function TripPageContent() {
               }
             </button>
           )}
+
+          {/* Nombre y país — estilo slider, zona inferior */}
+          <div className="absolute bottom-24 left-7">
+            <div className="mb-2 h-[2px] w-6 rounded-full bg-white" />
+            {destination.country && (
+              <p className="mb-1 text-[11px] uppercase tracking-widest text-white/60">
+                {destination.country}
+              </p>
+            )}
+            <h1 className="text-5xl font-black uppercase leading-tight text-white drop-shadow-lg">
+              {destination.name}
+            </h1>
+            {loadingTrip && (
+              <p className="text-white/60 text-sm mt-2">Cargando itinerario...</p>
+            )}
+            {tripError && (
+              <p className="text-red-300 text-sm mt-2">{tripError}</p>
+            )}
+          </div>
         </div>
       </div>
 
