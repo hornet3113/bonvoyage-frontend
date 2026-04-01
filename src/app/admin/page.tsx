@@ -313,7 +313,7 @@ function ResumenTab({
         <StatCard
           id="p"
           title="Prom. planificación"
-          value={parseFloat((stats.promedio_horas_planificacion ?? 0).toFixed(1))}
+          value={parseFloat(Number(stats.promedio_horas_planificacion ?? 0).toFixed(1))}
           icon={<IoTimeOutline />} color="#f59e0b"
           sub="horas por viaje"
           format="decimal"
