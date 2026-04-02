@@ -17,9 +17,11 @@ type AdminHypothesis = {
 };
 
 const RESULTADO_MAP: Record<string, { label: string; cls: string; dot: string }> = {
-  VALIDADA:    { label: "Validada",    cls: "bg-green-50 text-green-600 border-green-100",  dot: "#22c55e" },
-  NO_VALIDADA: { label: "No validada", cls: "bg-red-50 text-red-500 border-red-100",        dot: "#ef4444" },
-  PENDIENTE:   { label: "Pendiente",   cls: "bg-amber-50 text-amber-600 border-amber-100",  dot: "#f59e0b" },
+  "HIPÓTESIS VALIDADA":   { label: "Validada",    cls: "bg-green-50 text-green-600 border-green-100",  dot: "#22c55e" },
+  "HIPÓTESIS INVALIDADA": { label: "No validada", cls: "bg-red-50 text-red-500 border-red-100",        dot: "#ef4444" },
+  VALIDADA:               { label: "Validada",    cls: "bg-green-50 text-green-600 border-green-100",  dot: "#22c55e" },
+  NO_VALIDADA:            { label: "No validada", cls: "bg-red-50 text-red-500 border-red-100",        dot: "#ef4444" },
+  PENDIENTE:              { label: "Pendiente",   cls: "bg-amber-50 text-amber-600 border-amber-100",  dot: "#f59e0b" },
 };
 
 const TRIP_STATUS: Record<string, string> = {
@@ -30,10 +32,10 @@ const TRIP_STATUS: Record<string, string> = {
 };
 
 const FILTERS = [
-  { k: "",            label: "Todos" },
-  { k: "VALIDADA",    label: "Validadas" },
-  { k: "NO_VALIDADA", label: "No validadas" },
-  { k: "PENDIENTE",   label: "Pendientes" },
+  { k: "",                     label: "Todos" },
+  { k: "HIPÓTESIS VALIDADA",   label: "Validadas" },
+  { k: "HIPÓTESIS INVALIDADA", label: "No validadas" },
+  { k: "PENDIENTE",            label: "Pendientes" },
 ];
 
 export default function HypothesisTable() {
@@ -66,8 +68,8 @@ export default function HypothesisTable() {
     }
   }
 
-  const validadas   = rows.filter((r) => r.resultado_hipotesis === "VALIDADA").length;
-  const noValidadas = rows.filter((r) => r.resultado_hipotesis === "NO_VALIDADA").length;
+  const validadas   = rows.filter((r) => r.resultado_hipotesis === "HIPÓTESIS VALIDADA"   || r.resultado_hipotesis === "VALIDADA").length;
+  const noValidadas = rows.filter((r) => r.resultado_hipotesis === "HIPÓTESIS INVALIDADA" || r.resultado_hipotesis === "NO_VALIDADA").length;
   const pendientes  = rows.filter((r) => r.resultado_hipotesis === "PENDIENTE").length;
   const pct = rows.length > 0 ? Math.round((validadas / rows.length) * 100) : 0;
 
