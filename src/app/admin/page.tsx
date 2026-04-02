@@ -2,11 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { IoArrowBack } from "react-icons/io5";
 import {
   IoPeopleOutline, IoAirplaneOutline, IoCheckmarkCircleOutline,
   IoTimeOutline, IoCalendarOutline, IoAlertCircleOutline,
 } from "react-icons/io5";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import AvatarProfilePage from "../components/AvatarProfilePage";
 import UsersTable from "./components/UsersTable";
 import TripsTable from "./components/TripsTable";
 import TicketsTable from "./components/TicketsTable";
@@ -128,6 +132,7 @@ const TABS: { k: Tab; label: string }[] = [
 export default function AdminPage() {
   const { getToken } = useAuth();
   const router = useRouter();
+  const { profile } = useUserProfile();
   const [tab, setTab] = useState<Tab>("resumen");
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [recentTrips, setRecentTrips] = useState<AdminTrip[]>([]);
@@ -182,13 +187,66 @@ export default function AdminPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Panel de administración</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Datos en tiempo real de BonVoyage</p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm transition-colors"
+            >
+              <IoArrowBack className="text-base" />
+              Regresar
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Panel de administración</h1>
+              <p className="text-sm text-gray-500 mt-0.5">Datos en tiempo real de BonVoyage</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2.5 shadow-sm border border-gray-100 text-sm text-gray-600">
-            <IoCalendarOutline className="text-gray-400" />
-            {today}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2.5 shadow-sm border border-gray-100 text-sm text-gray-600">
+              <IoCalendarOutline className="text-gray-400" />
+              {today}
+            </div>
+            <div className="relative inline-flex items-center justify-center">
+              <UserButton
+                appearance={{
+                  elements: {
+                    userButtonAvatarBox: profile?.avatar_url ? "opacity-0" : undefined,
+                    userPreviewAvatarBox: profile?.avatar_url
+                      ? { backgroundImage: `url('${profile.avatar_url}')`, backgroundSize: "cover", backgroundPosition: "center", borderRadius: "50%" }
+                      : undefined,
+                    userPreviewAvatarImage: profile?.avatar_url ? "opacity-0" : undefined,
+                  },
+                }}
+              >
+                <UserButton.UserProfilePage
+                  label="Mi Avatar"
+                  url="avatar"
+                  labelIcon={
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" />
+                    </svg>
+                  }
+                >
+                  <AvatarProfilePage />
+                </UserButton.UserProfilePage>
+                <UserButton.MenuItems>
+                  <UserButton.Link
+                    label="Mis viajes"
+                    labelIcon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg>}
+                    href="/my-trips"
+                  />
+                  <UserButton.Link
+                    label="Dashboard"
+                    labelIcon={<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M2.25 13.5a8.25 8.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z" clipRule="evenodd" /><path fillRule="evenodd" d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V3z" clipRule="evenodd" /></svg>}
+                    href="/dashboard"
+                  />
+                </UserButton.MenuItems>
+              </UserButton>
+              {profile?.avatar_url && (
+                <div className="absolute inset-0 pointer-events-none rounded-full overflow-hidden flex items-center justify-center">
+                  <img src={profile.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
