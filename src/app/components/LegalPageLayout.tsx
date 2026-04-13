@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Header from "./Header";
+import Footer from "./Footer";
 
 interface Section {
   title: string;
@@ -63,20 +64,9 @@ export default function LegalPageLayout({
             </section>
           ))}
 
-          {/* Footer links */}
-          <div className="pt-8 border-t border-slate-800 flex flex-wrap gap-6 text-xs text-slate-500">
-            <Link href="/privacy" className="hover:text-cyan-400 transition-colors uppercase tracking-widest">
-              Política de Privacidad
-            </Link>
-            <Link href="/terms" className="hover:text-cyan-400 transition-colors uppercase tracking-widest">
-              Términos de Uso
-            </Link>
-            <Link href="/cookies" className="hover:text-cyan-400 transition-colors uppercase tracking-widest">
-              Política de Cookies
-            </Link>
-          </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

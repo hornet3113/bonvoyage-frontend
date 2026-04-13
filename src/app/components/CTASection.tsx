@@ -2,12 +2,6 @@ import Link from "next/link";
 import ParallaxSection from "./ParallaxSection";
 import { IoAirplaneOutline } from "react-icons/io5";
 
-const legalLinks = [
-  { label: "Privacidad", href: "/privacy" },
-  { label: "Términos de Uso", href: "/terms" },
-  { label: "Cookies", href: "/cookies" },
-];
-
 export default function CTASection() {
   return (
     <ParallaxSection
@@ -39,18 +33,6 @@ export default function CTASection() {
         <p className="text-xs text-slate-600 uppercase tracking-widest">
           Bon Voyage · Planifica. Confirma. Viaja.
         </p>
-
-        <div className="flex flex-wrap justify-center gap-6 text-xs text-slate-600">
-          {legalLinks.map(({ label, href }) => (
-            <Link
-              key={href}
-              href={href}
-              className="uppercase tracking-widest hover:text-slate-400 transition-colors"
-            >
-              {label}
-            </Link>
-          ))}
-        </div>
 
       </div>
     </ParallaxSection>

@@ -5,6 +5,7 @@ import ProblemSection from "@/app/components/ProblemSection";
 import AboutUsSection from "@/app/components/AboutUsSection";
 import FeaturesSection from "@/app/components/FeaturesSection";
 import CTASection from "@/app/components/CTASection";
+import Footer from "@/app/components/Footer";
 
 const righteous = Righteous({ subsets: ["latin"], weight: ["400"] });
 
@@ -33,6 +34,7 @@ export default function Home() {
       <FeaturesSection />
       <AboutUsSection />
       <CTASection />
+      <Footer />
     </main>
   );
 }
