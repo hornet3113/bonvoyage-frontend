@@ -54,7 +54,7 @@ function tomorrow() {
   return d.toISOString().slice(0, 10);
 }
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 type TripDay = { dayId: string; dayNumber: number; date: string };
 type SavedHotelInfo = { name: string; imageUrl: string | null; price: string; externalId?: string };
@@ -104,24 +104,21 @@ export default function HotelsSection({
     setHotels([]);
     setSelectedId(null);
 
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-
-     
-      const destRes = await fetch(
-        `${BACKEND}/api/v1/destinations/search?query=${encodeURIComponent(destination.name)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (!destRes.ok) throw new Error("No se pudo resolver el destino");
-      const destData = await destRes.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const destData = await api.get<any>(`/api/v1/destinations/search?query=${encodeURIComponent(destination.name)}`);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const places: any[] = destData?.data?.data ?? destData?.data ?? (Array.isArray(destData) ? destData : []);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const match =
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         places.find((p: any) => p.navigation?.entityType === "CITY") ??
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         places.find((p: any) => p.navigation?.entityType === "AIRPORT") ??
         places[0];
       if (!match) throw new Error("Destino no encontrado");
 
- 
       const params = new URLSearchParams({
         destination: match.entityId,
         checkin: checkIn,
@@ -131,17 +128,8 @@ export default function HotelsSection({
         currency: "USD",
       });
 
-      const res = await fetch(
-        `${BACKEND}/api/v1/hotels/search?${params}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? `Error ${res.status}`);
-      }
-
-      const data = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await api.get<any>(`/api/v1/hotels/search?${params}`);
       const list: Hotel[] = data.data ?? [];
       setHotels(list);
       if (list.length > 0) setSelectedId(list[0].id ?? "hotel-0");
@@ -157,25 +145,18 @@ export default function HotelsSection({
   async function handleSaveToItinerary() {
     if (!selectedHotel || !tripId) return;
     setSaving(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-
-      const res = await fetch(`${BACKEND}/api/v1/hotels/save`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          id: selectedHotel.id ?? `hotel-${selectedHotel.name}`,
-          name: selectedHotel.name,
-          latitude: selectedHotel.latitude ?? 0,
-          longitude: selectedHotel.longitude ?? 0,
-          rating: typeof selectedHotel.rating === "number" ? selectedHotel.rating : null,
-          imageUrl: selectedHotel.imageUrl ?? null,
-          price: parseFloat(String(selectedHotel.price).replace(/[^0-9.]/g, "")) || 0,
-          trip_id: tripId,
-        }),
+      await api.post("/api/v1/hotels/save", {
+        id: selectedHotel.id ?? `hotel-${selectedHotel.name}`,
+        name: selectedHotel.name,
+        latitude: selectedHotel.latitude ?? 0,
+        longitude: selectedHotel.longitude ?? 0,
+        rating: typeof selectedHotel.rating === "number" ? selectedHotel.rating : null,
+        imageUrl: selectedHotel.imageUrl ?? null,
+        price: parseFloat(String(selectedHotel.price).replace(/[^0-9.]/g, "")) || 0,
+        trip_id: tripId,
       });
-      if (!res.ok) throw new Error("Error al guardar hotel");
-
       setSavedId(selectedHotel.id ?? selectedId);
       onHotelSave?.({ name: selectedHotel.name, imageUrl: selectedHotel.imageUrl, price: selectedHotel.price, externalId: selectedHotel.id ?? undefined });
     } catch {

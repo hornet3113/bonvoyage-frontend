@@ -8,7 +8,7 @@ import {
 } from "react-icons/io5";
 import type { TripDay } from "../types";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient, BACKEND } from "@/lib/api";
 
 type TripType = "ida-vuelta" | "solo-ida" | "multidestino";
 
@@ -111,35 +111,25 @@ export default function FlightsSection({
   async function handleSaveFlight(vuelo: Vuelo, dayId: string) {
     if (!tripId) return;
     if (dayId.startsWith("placeholder-")) return;
-    const token = await getToken();
+    const api = createApiClient(getToken);
     const firstLeg = vuelo.tramos?.[0];
-    const saveRes = await fetch(`${BACKEND}/api/v1/flights/save`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        external_flight_id: vuelo.id ?? crypto.randomUUID(),
-        airline_code: (firstLeg?.aerolinea ?? vuelo.aerolinea ?? "UNKNOWN").substring(0, 10),
-        flight_number: (vuelo.id ?? "N/A").substring(0, 20),
-        origin_airport: (firstLeg?.origen ?? vuelo.origen ?? "UNK").substring(0, 10),
-        destination_airport: (firstLeg?.destino ?? vuelo.destino ?? "UNK").substring(0, 10),
-        departure_time: toISO(firstLeg?.salida ?? vuelo.salida),
-        arrival_time: toISO(firstLeg?.llegada ?? vuelo.llegada),
-        price: vuelo.precio ?? 0,
-        currency: "USD",
-        api_source: "air-scrapper",
-      }),
+    const saved = await api.post<{ reference_id: string }>("/api/v1/flights/save", {
+      external_flight_id: vuelo.id ?? crypto.randomUUID(),
+      airline_code: (firstLeg?.aerolinea ?? vuelo.aerolinea ?? "UNKNOWN").substring(0, 10),
+      flight_number: (vuelo.id ?? "N/A").substring(0, 20),
+      origin_airport: (firstLeg?.origen ?? vuelo.origen ?? "UNK").substring(0, 10),
+      destination_airport: (firstLeg?.destino ?? vuelo.destino ?? "UNK").substring(0, 10),
+      departure_time: toISO(firstLeg?.salida ?? vuelo.salida),
+      arrival_time: toISO(firstLeg?.llegada ?? vuelo.llegada),
+      price: vuelo.precio ?? 0,
+      currency: "USD",
+      api_source: "air-scrapper",
     });
-    if (!saveRes.ok) throw new Error("Error al guardar vuelo");
-    const { reference_id } = await saveRes.json();
-    await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${dayId}/items`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        item_type: "FLIGHT",
-        flight_reference_id: reference_id,
-        estimated_cost: vuelo.precio != null ? Number(vuelo.precio) : undefined,
-        notes: "Vuelo",
-      }),
+    await api.post(`/api/v1/trips/${tripId}/days/${dayId}/items`, {
+      item_type: "FLIGHT",
+      flight_reference_id: saved.reference_id,
+      estimated_cost: vuelo.precio != null ? Number(vuelo.precio) : undefined,
+      notes: "Vuelo",
     });
     onFlightSave?.({
       airline: firstLeg?.aerolinea ?? vuelo.aerolinea ?? "Aerolínea",
@@ -198,16 +188,9 @@ export default function FlightsSection({
         params.set("returnDate", returnDate);
       }
 
-      const res = await fetch(`${BACKEND}/api/v1/flights/search?${params}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? `Error ${res.status}`);
-      }
-
-      const data = await res.json();
+      const api = createApiClient(getToken);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await api.get<any>(`/api/v1/flights/search?${params}`);
       setVuelos(data.data?.vuelos ?? []);
       setSearched(true);
     } catch (err: unknown) {

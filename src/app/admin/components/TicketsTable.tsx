@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { IoChevronBack, IoChevronForward, IoWalletOutline } from "react-icons/io5";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 type AdminTicket = {
   ticket_id: string;
@@ -55,15 +55,12 @@ export default function TicketsTable() {
 
   async function fetchTickets() {
     setLoading(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
       const p = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
       if (estado) p.set("estado", estado);
-      const res = await fetch(`${BACKEND}/api/v1/admin/tickets?${p}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await api.get<any>(`/api/v1/admin/tickets?${p}`);
       const d = data?.data ?? data;
       setTickets(d.tickets ?? []);
       setTotal(d.total ?? 0);

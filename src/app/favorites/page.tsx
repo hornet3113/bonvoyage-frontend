@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import { IoCalendarOutline, IoChevronForward, IoHeart } from "react-icons/io5";
 import Link from "next/link";
 import Header from "@/app/components/Header";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 type Trip = {
   trip_id: string;
@@ -32,13 +31,9 @@ export default function FavoritesPage() {
 
   useEffect(() => {
     async function load() {
+      const api = createApiClient(getToken);
       try {
-        const token = await getToken();
-        const res = await fetch(`${BACKEND}/api/v1/trips`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        const data = await res.json();
+        const data = await api.get<{ trips?: Trip[]; data?: Trip[] } & Trip[]>("/api/v1/trips");
         const all: Trip[] = data.trips ?? data.data ?? data ?? [];
         setTrips(all.filter((t: Trip) => t.is_favorite));
       } catch {

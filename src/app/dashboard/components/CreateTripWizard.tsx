@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   IoClose, IoAirplane, IoCalendarOutline, IoWallet, IoChevronBack,
 } from "react-icons/io5";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 const MONTHS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -106,17 +105,12 @@ export default function CreateTripWizard({ place, onClose }: Props) {
   async function handleCreate() {
     setLoading(true);
     setError(null);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-
       // Prevent duplicate trips to the same destination
-      const tripsRes = await fetch(`${BACKEND}/api/v1/trips`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (tripsRes.ok) {
-        const tripsData = await tripsRes.json();
-        const existing: Array<{ destination_name?: string; destination_city?: string }> =
-          tripsData.trips ?? tripsData.data ?? tripsData ?? [];
+      try {
+        const tripsData = await api.get<{ trips?: Array<{ destination_name?: string; destination_city?: string }>; data?: Array<{ destination_name?: string; destination_city?: string }> }>("/api/v1/trips");
+        const existing = tripsData.trips ?? tripsData.data ?? [];
         const duplicate = existing.find(
           (t) =>
             (t.destination_city ?? t.destination_name ?? "").toLowerCase() ===
@@ -127,6 +121,8 @@ export default function CreateTripWizard({ place, onClose }: Props) {
           setLoading(false);
           return;
         }
+      } catch {
+        // si no se puede verificar duplicados, continuar
       }
 
       const body: Record<string, unknown> = {
@@ -143,21 +139,7 @@ export default function CreateTripWizard({ place, onClose }: Props) {
       };
       if (budget) body.total_budget = parseFloat(budget);
 
-      const res = await fetch(`${BACKEND}/api/v1/trips`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? `Error ${res.status}`);
-      }
-
-      const raw = await res.json();
+      const raw = await api.post<{ data?: { trip_id?: string; id?: string; tripId?: string } } & { trip_id?: string; id?: string; tripId?: string }>("/api/v1/trips", body);
       const data = raw?.data ?? raw;
       const tripId = data.trip_id ?? data.id ?? data.tripId;
       if (!tripId) throw new Error("No se pudo obtener el ID del viaje");

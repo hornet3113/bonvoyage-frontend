@@ -20,7 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 const ItineraryMap = dynamic(() => import("./ItineraryMap"), { ssr: false });
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 type LiveHours = { isOpenNow: boolean | null; todayHours: string | null; weeklyHours: string[] | null };
 
@@ -83,13 +83,9 @@ export default function ItinerarySection({
     if (!tripId) return;
     let cancelled = false;
     async function fetchBudget() {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/v1/trips/${tripId}/ticket`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok || cancelled) return;
-      const json = await res.json();
-      // handle possible { data: {...} } wrapper
+      const api = createApiClient(getToken);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const json = await api.get<any>(`/api/v1/trips/${tripId}/ticket`);
       const data = json?.data ?? json;
       if (!cancelled && data?.ticket_id) setBudget(data);
     }
@@ -122,13 +118,11 @@ export default function ItinerarySection({
     // Fetch on-demand
     let cancelled = false;
     async function fetchHours() {
-      const token = await getToken();
+      const api = createApiClient(getToken);
       const endpoint = item!.type === "restaurant" ? "restaurants" : "poi";
-      const res = await fetch(`${BACKEND}/api/v1/${endpoint}?lat=${item!.lat}&lng=${item!.lng}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok || cancelled) return;
-      const data = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await api.get<any>(`/api/v1/${endpoint}?lat=${item!.lat}&lng=${item!.lng}`);
+      if (cancelled) return;
       const found = (data.places ?? []).find((p: { id: string }) => p.id === item!.id);
       if (!cancelled) setLiveHours(found ? { isOpenNow: found.isOpenNow ?? null, todayHours: found.todayHours ?? null, weeklyHours: found.weeklyHours ?? null } : null);
     }

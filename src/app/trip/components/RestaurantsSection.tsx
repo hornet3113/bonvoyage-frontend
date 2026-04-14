@@ -41,7 +41,7 @@ type Props = {
   readOnly?: boolean;
 };
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 export default function RestaurantsSection({ destination, tripDays, onAddToItinerary, readOnly = false }: Props) {
   const { getToken } = useAuth();
@@ -61,15 +61,11 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
   useEffect(() => {
     async function fetchRestaurants() {
       setLoading(true);
+      const api = createApiClient(getToken);
       try {
-        const token = await getToken();
-        const res = await fetch(
-          `${BACKEND}/api/v1/restaurants?lat=${destination.lat}&lng=${destination.lng}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const data = await res.json();
+        const data = await api.get<{ places?: Place[] }>(`/api/v1/restaurants?lat=${destination.lat}&lng=${destination.lng}`);
         setPlaces(data.places ?? []);
-        if (data.places?.length > 0) setSelectedId(data.places[0].id);
+        if (data.places && data.places.length > 0) setSelectedId(data.places[0].id);
       } catch {
         setPlaces([]);
       } finally {

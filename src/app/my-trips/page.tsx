@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import { IoAirplane, IoCalendarOutline, IoChevronForward, IoHeart, IoHeartOutline, IoTrashOutline, IoSearchOutline, IoClose } from "react-icons/io5";
 import Link from "next/link";
 import Header from "@/app/components/Header";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 type Trip = {
   trip_id: string;
@@ -37,13 +36,9 @@ export default function MyTripsPage() {
 
   useEffect(() => {
     async function load() {
+      const api = createApiClient(getToken);
       try {
-        const token = await getToken();
-        const res = await fetch(`${BACKEND}/api/v1/trips`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error(`Error ${res.status}`);
-        const data = await res.json();
+        const data = await api.get<{ trips?: Trip[]; data?: Trip[] } & Trip[]>("/api/v1/trips");
         setTrips(data.trips ?? data.data ?? data ?? []);
       } catch {
         setError("No se pudieron cargar los viajes.");
@@ -58,22 +53,17 @@ export default function MyTripsPage() {
     if (deleting.has(tripId)) return;
     setDeleting((prev) => new Set(prev).add(tripId));
     setConfirmDelete(null);
+    const api = createApiClient(getToken);
     // Optimistic remove
     setTrips((prev) => prev.filter((t) => t.trip_id !== tripId));
     try {
-      const token = await getToken();
-      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/api/v1/trips/${tripId}`);
     } catch {
       // Reload on error to restore the list
-      const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/v1/trips`, { headers: { Authorization: `Bearer ${token}` } });
-      if (res.ok) {
-        const data = await res.json();
+      try {
+        const data = await api.get<{ trips?: Trip[]; data?: Trip[] } & Trip[]>("/api/v1/trips");
         setTrips(data.trips ?? data.data ?? data ?? []);
-      }
+      } catch { /* mantener estado optimista si tampoco se puede recargar */ }
     } finally {
       setDeleting((prev) => { const s = new Set(prev); s.delete(tripId); return s; });
     }
@@ -82,17 +72,13 @@ export default function MyTripsPage() {
   async function handleToggleFavorite(tripId: string, current: boolean) {
     if (toggling.has(tripId)) return;
     setToggling((prev) => new Set(prev).add(tripId));
+    const api = createApiClient(getToken);
     // Optimistic update
     setTrips((prev) =>
       prev.map((t) => (t.trip_id === tripId ? { ...t, is_favorite: !current } : t))
     );
     try {
-      const token = await getToken();
-      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ is_favorite: !current }),
-      });
+      await api.patch(`/api/v1/trips/${tripId}`, { is_favorite: !current });
     } catch {
       // Revert on error
       setTrips((prev) =>

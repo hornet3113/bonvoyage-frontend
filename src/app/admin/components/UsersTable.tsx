@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { IoSearch, IoChevronBack, IoChevronForward } from "react-icons/io5";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 type AdminUser = {
   user_id: string;
@@ -49,15 +49,12 @@ export default function UsersTable() {
 
   async function fetchUsers() {
     setLoading(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
       const p = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
       if (query) p.set("search", query);
-      const res = await fetch(`${BACKEND}/api/v1/admin/users?${p}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await api.get<any>(`/api/v1/admin/users?${p}`);
       const d = data?.data ?? data;
       setUsers(d.users ?? []);
       setTotal(d.total ?? 0);

@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { createApiClient } from "@/lib/api";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 const MIN_SECONDS = 2; // no enviar si estuvo menos de 2 segundos
 
 /**
@@ -28,22 +28,9 @@ export function useTripTimeTracker(tripId: string | null, active: boolean) {
       startRef.current = null;
       if (seconds < MIN_SECONDS) return;
 
-      // Clerk cachea el token — es síncrono en la práctica
-      getToken()
-        .then((token) => {
-          if (!token) return;
-          // keepalive asegura que la request se complete aunque el usuario cierre la pestaña
-          fetch(`${BACKEND}/api/v1/trips/${tripId}/time`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ seconds }),
-            keepalive: true,
-          }).catch(() => {});
-        })
-        .catch(() => {});
+      // keepalive asegura que la request se complete aunque el usuario cierre la pestaña
+      const api = createApiClient(getToken);
+      api.patch(`/api/v1/trips/${tripId}/time`, { seconds }, { keepalive: true }).catch(() => {});
     }
 
     function handleVisibilityChange() {

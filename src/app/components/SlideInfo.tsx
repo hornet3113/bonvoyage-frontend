@@ -7,8 +7,7 @@ import { IoMdBookmark } from "react-icons/io";
 import { IoCheckmarkOutline } from "react-icons/io5";
 import OtherInfo from "./OtherInfo";
 import { Data, CurrentSlideData } from "@/app/page";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 type Props = {
     transitionData: Data;
@@ -23,18 +22,11 @@ function SlideInfo({ transitionData, currentSlideData }: Props) {
     const activeData = transitionData ? transitionData : currentSlideData.data;
 
     const handleAddToWishlist = async () => {
+        const api = createApiClient(getToken);
         try {
-            const token = await getToken();
-            await fetch(`${BACKEND}/api/v1/wishlist`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    city: activeData.title,
-                    country: activeData.country ?? activeData.location,
-                }),
+            await api.post("/api/v1/wishlist", {
+                city: activeData.title,
+                country: activeData.country ?? activeData.location,
             });
             setSaved(true);
             setTimeout(() => setSaved(false), 2000);

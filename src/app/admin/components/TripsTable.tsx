@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { IoChevronBack, IoChevronForward } from "react-icons/io5";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 type AdminTrip = {
   trip_id: string;
@@ -49,15 +49,12 @@ export default function TripsTable() {
 
   async function fetchTrips() {
     setLoading(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
       const p = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
       if (statusFilter) p.set("status", statusFilter);
-      const res = await fetch(`${BACKEND}/api/v1/admin/trips?${p}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = await api.get<any>(`/api/v1/admin/trips?${p}`);
       const d = data?.data ?? data;
       setTrips(d.trips ?? []);
       setTotal(d.total ?? 0);

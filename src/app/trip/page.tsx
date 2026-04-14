@@ -14,10 +14,9 @@ import { IoHeart, IoHeartOutline, IoCheckmarkCircle, IoCloseCircle, IoTrophy, Io
 import { useRouter } from "next/navigation";
 import type { ItineraryItem, TripItinerary, DayPlan } from "./types";
 import { useTripTimeTracker } from "@/hooks/useTripTimeTracker";
+import { createApiClient, ApiError } from "@/lib/api";
 
 export type TripSection = "vuelos" | "hospedaje" | "puntos" | "restaurantes" | "itinerario";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
 function TripPageContent() {
   const searchParams = useSearchParams();
@@ -99,20 +98,23 @@ function TripPageContent() {
   const loadTrip = useCallback(async () => {
     if (!tripId) return;
     setLoadingTrip(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
       // Retry once on 500/400 — race condition right after trip creation
-      let res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 500 || res.status === 400) {
-        await new Promise((r) => setTimeout(r, 1500));
-        res = await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let json: any;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        json = await api.get<any>(`/api/v1/trips/${tripId}`);
+      } catch (err) {
+        if (err instanceof ApiError && (err.status === 500 || err.status === 400)) {
+          await new Promise((r) => setTimeout(r, 1500));
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          json = await api.get<any>(`/api/v1/trips/${tripId}`);
+        } else {
+          throw err;
+        }
       }
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      const json = await res.json();
       const data = json.data ?? json;
 
       // Map backend response to our DayPlan shape
@@ -259,13 +261,9 @@ function TripPageContent() {
     togglingFav.current = true;
     const next = !isFavorite;
     setIsFavorite(next);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ is_favorite: next }),
-      });
+      await api.patch(`/api/v1/trips/${tripId}`, { is_favorite: next });
     } catch {
       setIsFavorite(!next); // revert
     } finally {
@@ -276,16 +274,11 @@ function TripPageContent() {
   async function changeStatus(action: "confirm" | "cancel" | "complete") {
     if (!tripId || changingStatus) return;
     setChangingStatus(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/v1/trips/${tripId}/${action}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      const json = await res.json();
-      const data = json.data ?? json;
-      setTripStatus(data.status ?? (action === "confirm" ? "CONFIRMED" : action === "cancel" ? "CANCELLED" : "COMPLETED"));
+      const json = await api.post<Record<string, unknown>>(`/api/v1/trips/${tripId}/${action}`, {});
+      const data = (json.data ?? json) as Record<string, unknown>;
+      setTripStatus((data.status as typeof tripStatus) ?? (action === "confirm" ? "CONFIRMED" : action === "cancel" ? "CANCELLED" : "COMPLETED"));
     } catch {
       // silent — keep current status
     } finally {
@@ -305,20 +298,16 @@ function TripPageContent() {
   async function saveEdit() {
     if (!tripId || savingEdit) return;
     setSavingEdit(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
       const body: Record<string, unknown> = {
         trip_name: editName,
         start_date: editStart,
         end_date: editEnd,
+        currency: editCurrency,
       };
       if (editBudget) body.total_budget = parseFloat(editBudget);
-      body.currency = editCurrency;
-      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(body),
-      });
+      await api.patch(`/api/v1/trips/${tripId}`, body);
       setTripMeta((prev) => prev ? { ...prev, startDate: editStart, endDate: editEnd } : prev);
       setEditOpen(false);
     } catch {
@@ -331,12 +320,9 @@ function TripPageContent() {
   async function deleteTrip() {
     if (!tripId || deletingTrip) return;
     setDeletingTrip(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-      await fetch(`${BACKEND}/api/v1/trips/${tripId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/api/v1/trips/${tripId}`);
       router.push("/my-trips");
     } catch {
       setDeletingTrip(false);
@@ -374,7 +360,7 @@ function TripPageContent() {
     });
 
     try {
-      const token = await getToken();
+      const api = createApiClient(getToken);
 
       const categoryMap: Record<string, string> = {
         poi: "POI",
@@ -383,10 +369,9 @@ function TripPageContent() {
       };
 
       // 1. Save/upsert place reference → get reference_id
-      const saveRes = await fetch(`${BACKEND}/api/v1/places/save`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
+      let reference_id: string;
+      try {
+        const saved = await api.post<{ reference_id: string }>("/api/v1/places/save", {
           external_id: item.id,
           category: categoryMap[item.type] ?? "POI",
           name: item.name,
@@ -396,24 +381,20 @@ function TripPageContent() {
           photo_url: item.photoUrl ?? null,
           address: item.address ?? null,
           price_level: item.priceLevel ?? null,
-        }),
-      });
-      if (!saveRes.ok) return; // keep optimistic item shown
-
-      const { reference_id } = await saveRes.json();
+        });
+        reference_id = saved.reference_id;
+      } catch {
+        return; // keep optimistic item shown
+      }
 
       // 2. Add item to the itinerary day (skip if day has no real backend ID)
       if (!day?.dayId || day.dayId.startsWith("placeholder-")) return;
-      await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${day.dayId}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          item_type: "PLACE",
-          place_reference_id: reference_id,
-          ...(options?.start_time && { start_time: options.start_time }),
-          ...(options?.end_time   && { end_time:   options.end_time }),
-          ...(options?.notes      && { notes:       options.notes }),
-        }),
+      await api.post(`/api/v1/trips/${tripId}/days/${day.dayId}/items`, {
+        item_type: "PLACE",
+        place_reference_id: reference_id,
+        ...(options?.start_time && { start_time: options.start_time }),
+        ...(options?.end_time   && { end_time:   options.end_time }),
+        ...(options?.notes      && { notes:       options.notes }),
       });
     } catch {
       // silent — optimistic item stays visible
@@ -437,12 +418,8 @@ function TripPageContent() {
     if (!tripId) return;
     const day = itinerary.days.find((d) => d.dayNumber === dayNumber);
     if (!day || day.dayId.startsWith("placeholder-")) return;
-    const token = await getToken();
-    await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${day.dayId}/items/${itemId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify(fields),
-    });
+    const api = createApiClient(getToken);
+    await api.patch(`/api/v1/trips/${tripId}/days/${day.dayId}/items/${itemId}`, fields);
     setItinerary((prev) => ({
       ...prev,
       days: prev.days.map((d) =>
@@ -470,12 +447,8 @@ function TripPageContent() {
     if (!tripId) return;
     const fromDay = itinerary.days.find((d) => d.dayNumber === fromDayNumber);
     if (!fromDay || fromDay.dayId.startsWith("placeholder-")) return;
-    const token = await getToken();
-    await fetch(`${BACKEND}/api/v1/trips/${tripId}/days/${fromDay.dayId}/items/${itemId}/move`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ target_day_id: targetDayId }),
-    });
+    const api = createApiClient(getToken);
+    await api.post(`/api/v1/trips/${tripId}/days/${fromDay.dayId}/items/${itemId}/move`, { target_day_id: targetDayId });
     setItinerary((prev) => {
       const item = prev.days
         .find((d) => d.dayNumber === fromDayNumber)
@@ -499,15 +472,9 @@ function TripPageContent() {
     const day = itinerary.days.find((d) => d.dayNumber === dayNumber);
     if (!day) return;
 
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-      await fetch(
-        `${BACKEND}/api/v1/trips/${tripId}/days/${day.dayId}/items/${itemId}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      await api.delete(`/api/v1/trips/${tripId}/days/${day.dayId}/items/${itemId}`);
     } catch {
       // silent
     }

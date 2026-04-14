@@ -5,8 +5,7 @@ import { useAuth } from "@clerk/nextjs";
 import { IoBookmark, IoLocationSharp, IoAirplane, IoTrash } from "react-icons/io5";
 import Link from "next/link";
 import Header from "@/app/components/Header";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 const MONTH_NAMES = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
@@ -58,13 +57,9 @@ export default function WishlistPage() {
 
   async function load() {
     setLoading(true);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/v1/wishlist`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      const data = await res.json();
+      const data = await api.get<{ data?: WishlistItem[] } & WishlistItem[]>("/api/v1/wishlist");
       setItems(data.data ?? data ?? []);
     } catch {
       setError("No se pudo cargar la wishlist.");
@@ -75,15 +70,12 @@ export default function WishlistPage() {
 
   async function handleRemove(wishlistId: string) {
     setRemoving(wishlistId);
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-      await fetch(`${BACKEND}/api/v1/wishlist/${wishlistId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await api.delete(`/api/v1/wishlist/${wishlistId}`);
       setItems((prev) => prev.filter((i) => i.wishlist_id !== wishlistId));
     } catch {
-      
+      // silent fail
     } finally {
       setRemoving(null);
     }

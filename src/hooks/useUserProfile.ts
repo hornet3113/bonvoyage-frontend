@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+import { createApiClient } from "@/lib/api";
 
 export type UserProfile = {
   user_id: string;
@@ -30,14 +29,12 @@ export function useUserProfile() {
 
   useEffect(() => {
     async function load() {
+      const api = createApiClient(getToken);
       try {
-        const token = await getToken();
-        const res = await fetch(`${BACKEND}/api/v1/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const json = await res.json();
+        const json = await api.get<{ data?: UserProfile } & UserProfile>("/api/v1/users/me");
         setProfile(json.data ?? json);
+      } catch {
+        // no mostrar error al usuario, simplemente no carga el perfil
       } finally {
         setLoading(false);
       }
@@ -47,13 +44,9 @@ export function useUserProfile() {
 
   const fetchAvatars = useCallback(async () => {
     if (avatars.length > 0) return;
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/v1/avatars`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const json = await res.json();
+      const json = await api.get<{ data?: Avatar[] } & Avatar[]>("/api/v1/avatars");
       setAvatars(json.data ?? json);
     } catch {
       // silently fail
@@ -63,18 +56,12 @@ export function useUserProfile() {
   const updateAvatar = useCallback(
     async (avatarId: number): Promise<boolean> => {
       setUpdating(true);
+      const api = createApiClient(getToken);
       try {
-        const token = await getToken();
-        const res = await fetch(`${BACKEND}/api/v1/users/me`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ avatar_id: avatarId }),
-        });
-        if (!res.ok) return false;
-        const json = await res.json();
+        const json = await api.patch<{ data?: UserProfile } & UserProfile>(
+          "/api/v1/users/me",
+          { avatar_id: avatarId }
+        );
         setProfile(json.data ?? json);
         return true;
       } catch {

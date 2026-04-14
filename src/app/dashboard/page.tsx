@@ -7,10 +7,9 @@ import { useAuth } from "@clerk/nextjs";
 import Header from "@/app/components/Header";
 import DestinationCard from "./components/DestinationCard";
 import CreateTripWizard from "./components/CreateTripWizard";
+import { createApiClient } from "@/lib/api";
 
 const MapView = dynamic(() => import("./components/MapView"), { ssr: false });
-
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
 type SelectedPlace = {
   name: string;
@@ -62,14 +61,9 @@ function DashboardContent() {
   }, []);
 
   async function handleSaveToWishlist(place: SelectedPlace) {
+    const api = createApiClient(getToken);
     try {
-      const token = await getToken();
-      const res = await fetch(`${BACKEND}/api/v1/wishlist`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ city: place.name, country: place.country }),
-      });
-      if (!res.ok) throw new Error();
+      await api.post("/api/v1/wishlist", { city: place.name, country: place.country });
       setWishlistToast("success");
     } catch {
       setWishlistToast("error");
