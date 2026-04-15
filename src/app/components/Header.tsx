@@ -73,15 +73,34 @@ function Header({ variant = "dark", onSearch }: Props) {
                 Bon Voyage
             </div>
             <ul className={`flex flex-wrap items-center gap-3 text-[11px] md:gap-10 ${textClass}`}>
-                {menus.map(({ label, href }) => (
-                    <motion.li
-                        layout
-                        key={href}
-                        className={`${pathname === href ? activeBorderClass : ""} inline-block cursor-pointer ${menuHoverClass}`}
-                    >
-                        <Link href={href}>{label}</Link>
-                    </motion.li>
-                ))}
+                {menus.map(({ label, href }) => {
+                    const isAnchor = href.includes("#");
+                    const anchorId = isAnchor ? href.split("#")[1] : null;
+
+                    const handleAnchorClick = (e: React.MouseEvent) => {
+                        if (!anchorId) return;
+                        e.preventDefault();
+                        const target = document.getElementById(anchorId);
+                        if (target) {
+                            target.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }
+                    };
+
+                    return (
+                        <motion.li
+                            layout
+                            key={href}
+                            className={`${pathname === href ? activeBorderClass : ""} inline-block cursor-pointer ${menuHoverClass}`}
+                            whileTap={{ scale: 0.93 }}
+                        >
+                            {isAnchor ? (
+                                <a href={href} onClick={handleAnchorClick}>{label}</a>
+                            ) : (
+                                <Link href={href}>{label}</Link>
+                            )}
+                        </motion.li>
+                    );
+                })}
 
                 {isLight && (
                     <li>

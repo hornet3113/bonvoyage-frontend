@@ -60,13 +60,9 @@ export default function FeaturesSection() {
             <Link href="/dashboard">
               <motion.button
                 className="rounded-full bg-slate-900 px-8 py-3 text-xs font-semibold uppercase tracking-widest text-white"
-                whileHover={{
-                  scale: 1.06,
-                  backgroundColor: "#06b6d4",
-                  boxShadow: "0 0 24px rgba(6,182,212,0.45)",
-                }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                whileHover={{ scale: 1.03, opacity: 0.88 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ duration: 0.2 }}
               >
                 EXPLORAR AHORA
               </motion.button>

@@ -39,7 +39,7 @@ export default function HowItWorksSection() {
     <ParallaxSection
       id="como-funciona"
       variant="light"
-      className="bg-white px-6 py-24 md:px-16 lg:px-24"
+      className="bg-gradient-to-br from-sky-50 via-cyan-50/60 to-slate-50 px-6 py-24 md:px-16 lg:px-24"
     >
       <div className="mx-auto max-w-6xl flex flex-col gap-20">
 
@@ -69,40 +69,34 @@ export default function HowItWorksSection() {
           </h2>
         </motion.div>
 
-        {/* Steps */}
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
+        {/* Steps — glass cards */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {steps.map((step, i) => (
             <motion.div
               key={i}
-              className="flex flex-col gap-5"
+              className="relative flex flex-col gap-5 rounded-2xl border border-white/70 bg-white/60 px-6 py-7 shadow-lg backdrop-blur-md"
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
               transition={{ duration: 0.5, delay: i * 0.15, ease: "easeOut" }}
+              whileHover={{ y: -6, boxShadow: "0 20px 48px rgba(6,182,212,0.12)" }}
             >
-              <div className="flex items-center gap-4">
-                <motion.div
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500 text-white flex-shrink-0"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                >
-                  {step.icon}
-                </motion.div>
-                <span className="text-5xl font-bold text-slate-100 leading-none">
-                  {step.number}
-                </span>
-              </div>
+              {/* Ghost number — top right */}
+              <span className="absolute top-4 right-5 text-6xl font-black leading-none text-cyan-400/20 select-none">
+                {step.number}
+              </span>
 
-              {i < steps.length - 1 && (
-                <motion.div
-                  className="hidden md:block h-[1px] w-full bg-slate-100 mt-1 mb-1"
-                  initial={{ scaleX: 0 }}
-                  whileInView={{ scaleX: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.15 + 0.3 }}
-                  style={{ originX: 0 }}
-                />
-              )}
+              {/* Icon */}
+              <motion.div
+                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500 text-white flex-shrink-0"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300, damping: 15 }}
+              >
+                {step.icon}
+              </motion.div>
+
+              {/* Divider */}
+              <div className="h-[1px] w-full bg-slate-200/60" />
 
               <h3 className="text-xl font-semibold text-slate-800">{step.title}</h3>
               <p className="text-sm leading-relaxed text-slate-500">{step.description}</p>
@@ -110,17 +104,17 @@ export default function HowItWorksSection() {
           ))}
         </div>
 
-        {/* Stats strip */}
-        <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+        {/* Stats strip — also glass */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {stats.map(({ value, label }, i) => (
             <motion.div
               key={label}
-              className="flex flex-col items-center justify-center rounded-2xl bg-slate-50 px-4 py-6 text-center"
+              className="flex flex-col items-center justify-center rounded-2xl border border-white/70 bg-white/60 px-4 py-6 text-center shadow-md backdrop-blur-md"
               initial={{ opacity: 0, scale: 0.85 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true, margin: "-40px" }}
               transition={{ duration: 0.4, delay: i * 0.08, ease: "easeOut" }}
-              whileHover={{ y: -4, boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
+              whileHover={{ y: -4, boxShadow: "0 12px 32px rgba(6,182,212,0.15)" }}
             >
               <span className="text-3xl font-bold text-slate-900 md:text-4xl">{value}</span>
               <span className="mt-1 text-xs text-slate-500">{label}</span>

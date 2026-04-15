@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 /* Remove default Mapbox Popup padding/tip */
 .mapboxgl-popup-content {
   padding: 0 !important;
