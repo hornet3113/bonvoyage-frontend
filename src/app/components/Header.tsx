@@ -32,6 +32,8 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
     const { profile } = useUserProfile();
     const { isSignedIn } = useAuth();
 
+    const isOnLanding = pathname === "/";
+
     const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!query.trim()) return;
@@ -45,11 +47,16 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
             if (feature) {
                 const [lng, lat] = feature.center;
                 if (onSearch) {
+                    // Si hay callback local (ej. ya estamos en dashboard), úsalo directamente
                     onSearch({ name: feature.place_name, lng, lat });
                 } else {
-                    router.push(`/dashboard`);
+                    // Desde otras páginas → navegar al dashboard con el query en URL
+                    router.push(
+                        `/dashboard?searchQuery=${encodeURIComponent(query)}&searchLat=${lat}&searchLng=${lng}&searchName=${encodeURIComponent(feature.place_name)}`
+                    );
                 }
                 setQuery("");
+                setSearchOpen(false);
             }
         } finally {
             setLoading(false);
@@ -57,31 +64,73 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
     };
 
     const isGlass = variant === "glass";
-    const isLanding = useLandingMenus || pathname === "/";
+    const isLanding = useLandingMenus || isOnLanding;
     const baseLandingMenus = isSignedIn
         ? [...landingMenus, { label: "DiscoveryMap", href: "/dashboard" }]
         : landingMenus;
     const menus = isLanding ? baseLandingMenus : appMenus;
-// checando si si se hixo bien el efecto vidrio
-    // ── Glass / full-width variant ─────────────────────────────────────────────
+
+    // ── Shared search form (rendered in non-landing pages) ──────────────────────
+    const SearchForm = (
+        <form
+            onSubmit={handleSearch}
+            className="hidden md:flex items-center justify-end"
+            onMouseEnter={() => { setSearchOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
+            onMouseLeave={() => { if (!query) setSearchOpen(false); }}
+        >
+            <motion.div
+                layout
+                className="flex items-center rounded-full border border-gray-300 bg-gray-100 overflow-hidden"
+                style={{ paddingLeft: searchOpen ? "0.75rem" : 0 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+            >
+                <AnimatePresence>
+                    {searchOpen && (
+                        <motion.input
+                            key="search-input"
+                            ref={inputRef}
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 160, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            transition={{ duration: 0.25, ease: "easeOut" }}
+                            type="text"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Buscar destino..."
+                            className="bg-transparent outline-none text-[12px] text-gray-700 placeholder:text-gray-400 pr-1 font-[family-name:var(--font-playfair)]"
+                        />
+                    )}
+                </AnimatePresence>
+                <button
+                    type={searchOpen && query ? "submit" : "button"}
+                    disabled={loading}
+                    className="flex items-center justify-center w-8 h-8 text-gray-500 hover:text-blue-500 transition-colors duration-200"
+                >
+                    <IoSearchOutline className="text-base" />
+                </button>
+            </motion.div>
+        </form>
+    );
+
+    // ── Glass variant (used inside dashboard map overlay) ───────────────────────
     if (isGlass) {
         return (
             <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="relative z-10 w-full flex items-center justify-between gap-4 px-5 md:px-10 py-3 bg-black/40 backdrop-blur-md border-b border-white/10"
+                className="relative z-10 w-full flex items-center justify-between gap-4 px-5 md:px-10 py-3 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm"
             >
                     {/* Logo */}
                     <div className="flex items-center gap-1.5 shrink-0">
-                        <IoIosGlobe className="text-lg text-white" />
-                        <span className="font-[family-name:var(--font-playfair)] italic text-white text-sm tracking-wide">
+                        <IoIosGlobe className="text-lg text-blue-500" />
+                        <span className="font-[family-name:var(--font-playfair)] italic text-gray-800 text-sm tracking-wide">
                             Bon Voyage
                         </span>
                     </div>
 
                     {/* Nav links */}
-                    <ul className="flex items-center gap-5 text-[11px] font-medium uppercase tracking-wider text-white/70 flex-1 justify-center">
+                    <ul className="flex items-center gap-5 text-[11px] font-medium uppercase tracking-wider text-gray-500 flex-1 justify-center font-[family-name:var(--font-playfair)]">
                         {menus.map(({ label, href }) => {
                             const isAnchor = href.includes("#");
                             const anchorId = isAnchor ? href.split("#")[1] : null;
@@ -97,7 +146,7 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                                 <motion.li
                                     layout
                                     key={href}
-                                    className={`inline-block cursor-pointer transition-colors duration-200 hover:text-white ${isActive ? "text-cyan-400" : ""}`}
+                                    className={`inline-block cursor-pointer transition-colors duration-200 hover:text-blue-500 ${isActive ? "text-blue-500 border-b border-blue-400" : ""}`}
                                     whileTap={{ scale: 0.93 }}
                                 >
                                     {isAnchor ? (
@@ -112,54 +161,16 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
 
                     {/* Right side: search + auth */}
                     <div className="flex items-center gap-3 shrink-0">
-                        {/* Expandable search */}
-                        <form
-                            onSubmit={handleSearch}
-                            className="hidden md:flex items-center justify-end"
-                            onMouseEnter={() => { setSearchOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
-                            onMouseLeave={() => { if (!query) setSearchOpen(false); }}
-                        >
-                            <motion.div
-                                layout
-                                className="flex items-center rounded-full border border-white/20 bg-white/10 overflow-hidden"
-                                style={{ paddingLeft: searchOpen ? "0.75rem" : 0 }}
-                                transition={{ duration: 0.25, ease: "easeOut" }}
-                            >
-                                <AnimatePresence>
-                                    {searchOpen && (
-                                        <motion.input
-                                            key="search-input"
-                                            ref={inputRef}
-                                            initial={{ width: 0, opacity: 0 }}
-                                            animate={{ width: 140, opacity: 1 }}
-                                            exit={{ width: 0, opacity: 0 }}
-                                            transition={{ duration: 0.25, ease: "easeOut" }}
-                                            type="text"
-                                            value={query}
-                                            onChange={(e) => setQuery(e.target.value)}
-                                            placeholder="Buscar destino..."
-                                            className="bg-transparent outline-none text-[11px] text-white placeholder:text-white/40 pr-1"
-                                        />
-                                    )}
-                                </AnimatePresence>
-                                <button
-                                    type={searchOpen && query ? "submit" : "button"}
-                                    disabled={loading}
-                                    className="flex items-center justify-center w-8 h-8 text-white/70 hover:text-cyan-400 transition-colors duration-200"
-                                >
-                                    <IoSearchOutline className="text-base" />
-                                </button>
-                            </motion.div>
-                        </form>
+                        {SearchForm}
 
                         <SignedOut>
                             <SignInButton mode="modal">
-                                <button data-testid="sign-in-button" className="text-[11px] uppercase tracking-wider text-white/70 hover:text-white transition-colors duration-200">
+                                <button data-testid="sign-in-button" className="text-[11px] uppercase tracking-wider font-[family-name:var(--font-playfair)] text-gray-600 hover:text-gray-900 transition-colors duration-200">
                                     Entrar
                                 </button>
                             </SignInButton>
                             <SignUpButton mode="modal">
-                                <button className="text-[11px] uppercase tracking-wider font-semibold px-4 py-1.5 rounded-full bg-cyan-400 text-black hover:bg-cyan-300 transition-colors duration-200">
+                                <button className="text-[11px] uppercase tracking-wider font-semibold px-4 py-1.5 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-200 font-[family-name:var(--font-playfair)]">
                                     Registrarse
                                 </button>
                             </SignUpButton>
@@ -202,20 +213,23 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
         );
     }
 
-    // ── Dark variant ─────────────────────────────────────────────────────────────
-    const isOnLanding = pathname === "/";
+    // ── Dark / Light variant ─────────────────────────────────────────────────────
     const containerClass = isOnLanding
         ? "absolute mt-5 flex w-full flex-wrap items-center justify-between gap-2 px-5 text-xs font-medium uppercase opacity-90 md:px-10"
-        : "sticky top-0 z-50 w-full flex items-center justify-between gap-4 px-5 md:px-10 py-3 bg-gray-950/95 backdrop-blur-sm border-b border-white/10 text-xs font-medium uppercase";
+        : "sticky top-0 z-50 w-full flex items-center justify-between gap-4 px-5 md:px-10 py-3 bg-white border-b border-gray-200 shadow-sm text-xs font-medium uppercase";
 
     return (
         <div className={containerClass}>
-            <div className="flex items-center gap-2 font-medium tracking-[4px] text-white">
-                <IoIosGlobe className="text-xl"/>
-                Bon Voyage
+            {/* Logo — siempre Playfair */}
+            <div className="flex items-center gap-2 tracking-[4px]">
+                <IoIosGlobe className={`text-xl ${isOnLanding ? "text-white" : "text-blue-500"}`}/>
+                <span className={`font-[family-name:var(--font-playfair)] italic text-sm tracking-wide ${isOnLanding ? "text-white" : "text-gray-800"}`}>
+                    Bon Voyage
+                </span>
             </div>
 
-            <ul className="flex flex-wrap items-center gap-3 text-[11px] text-white md:gap-10">
+            {/* Nav */}
+            <ul className={`flex flex-wrap items-center gap-3 text-[11px] font-[family-name:var(--font-playfair)] md:gap-10 ${isOnLanding ? "text-white" : "text-gray-600"}`}>
                 {menus.map(({ label, href }) => {
                     const isAnchor = href.includes("#");
                     const anchorId = isAnchor ? href.split("#")[1] : null;
@@ -234,7 +248,11 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                         <motion.li
                             layout
                             key={href}
-                            className={`${isActive ? "border-b-2 border-b-blue-500" : ""} inline-block cursor-pointer border-b-blue-500 transition duration-300 ease-in-out hover:border-b-2 hover:text-white`}
+                            className={`inline-block cursor-pointer transition duration-300 ease-in-out ${
+                                isActive
+                                    ? isOnLanding ? "border-b-2 border-white" : "border-b-2 border-blue-400 text-blue-500"
+                                    : isOnLanding ? "hover:border-b-2 hover:border-white" : "hover:text-blue-500 hover:border-b-2 hover:border-blue-300"
+                            }`}
                             whileTap={{ scale: 0.93 }}
                         >
                             {isAnchor ? (
@@ -247,63 +265,32 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                 })}
             </ul>
 
-            {/* Right side: expandable search + auth */}
+            {/* Right side */}
             <div className="flex items-center gap-3 shrink-0">
-                {/* Expandable search */}
-                <form
-                    onSubmit={handleSearch}
-                    className="hidden md:flex items-center justify-end"
-                    onMouseEnter={() => { setSearchOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
-                    onMouseLeave={() => { if (!query) setSearchOpen(false); }}
-                >
-                    <motion.div
-                        layout
-                        className="flex items-center rounded-full border border-white/20 bg-white/10 overflow-hidden"
-                        style={{ paddingLeft: searchOpen ? "0.75rem" : 0 }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
-                    >
-                        <AnimatePresence>
-                            {searchOpen && (
-                                <motion.input
-                                    key="search-input"
-                                    ref={inputRef}
-                                    initial={{ width: 0, opacity: 0 }}
-                                    animate={{ width: 140, opacity: 1 }}
-                                    exit={{ width: 0, opacity: 0 }}
-                                    transition={{ duration: 0.25, ease: "easeOut" }}
-                                    type="text"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    placeholder="Buscar destino..."
-                                    className="bg-transparent outline-none text-[11px] text-white placeholder:text-white/40 pr-1"
-                                />
-                            )}
-                        </AnimatePresence>
-                        <button
-                            type={searchOpen && query ? "submit" : "button"}
-                            disabled={loading}
-                            className="flex items-center justify-center w-8 h-8 text-white/70 hover:text-cyan-400 transition-colors duration-200"
-                        >
-                            <IoSearchOutline className="text-base" />
-                        </button>
-                    </motion.div>
-                </form>
+                {/* Buscador: solo visible en páginas que NO sean la landing */}
+                {!isOnLanding && SearchForm}
 
                 <div className="flex items-center gap-4">
                     <SignedOut>
                         <SignInButton mode="modal">
-                            <button data-testid="sign-in-button" className="px-3 py-1 rounded border border-white/50 hover:bg-white hover:text-black transition duration-300">
+                            <button
+                                data-testid="sign-in-button"
+                                className={`px-3 py-1 rounded border font-[family-name:var(--font-playfair)] transition duration-300 ${
+                                    isOnLanding
+                                        ? "border-white/50 text-white hover:bg-white hover:text-black"
+                                        : "border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                }`}
+                            >
                                 Iniciar sesión
                             </button>
                         </SignInButton>
                         <SignUpButton mode="modal">
-                            <button className="px-3 py-1 rounded bg-cyan-500 text-black hover:bg-cyan-600 transition duration-300">
+                            <button className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition duration-300 font-[family-name:var(--font-playfair)]">
                                 Registrarse
                             </button>
                         </SignUpButton>
                     </SignedOut>
                     <SignedIn>
-                        {/* Overlay del avatar del backend sobre el botón de Clerk */}
                         <div className="relative inline-flex items-center justify-center">
                             <UserButton
                                 appearance={{
