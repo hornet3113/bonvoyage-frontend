@@ -64,16 +64,15 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
         : landingMenus;
     const menus = isLanding ? baseLandingMenus : appMenus;
 
-    // ── Glass / floating-pill variant ──────────────────────────────────────────
+    // ── Glass / full-width variant ─────────────────────────────────────────────
     if (isGlass) {
         return (
-            <div className="absolute top-4 left-0 right-0 z-50 flex justify-center px-4">
-                <motion.div
-                    initial={{ opacity: 0, y: -12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: "easeOut" }}
-                    className="flex items-center gap-6 rounded-full bg-black/55 backdrop-blur-md border border-white/10 px-5 py-2.5 shadow-lg w-full max-w-4xl"
-                >
+            <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                className="relative z-10 w-full flex items-center justify-between gap-4 px-5 md:px-10 py-3 bg-black/40 backdrop-blur-md border-b border-white/10"
+            >
                     {/* Logo */}
                     <div className="flex items-center gap-1.5 shrink-0">
                         <IoIosGlobe className="text-lg text-white" />
@@ -200,8 +199,7 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                             </div>
                         </SignedIn>
                     </div>
-                </motion.div>
-            </div>
+            </motion.div>
         );
     }
 
