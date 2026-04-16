@@ -756,7 +756,7 @@ function TripPageContent() {
         </div>
       </div>
 
-      <main className="flex-1 w-full pt-0 pb-6">
+      <main className="flex-1 w-full pt-0 pb-24 md:pb-6">
         {sectionComponents[activeSection]}
       </main>
 
