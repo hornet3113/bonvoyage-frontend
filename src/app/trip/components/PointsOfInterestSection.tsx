@@ -317,10 +317,10 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
         })}
       </div>
 
-      <div className="flex gap-4 items-start">
+      <div className="flex flex-col lg:flex-row gap-4 items-start">
 
         {/* Cards grid */}
-        <div className="flex-1 overflow-y-auto max-h-[540px] pr-1">
+        <div className="flex-1 lg:overflow-y-auto lg:max-h-[540px] pr-1">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-300">
               <IoCompass className="text-4xl" />
@@ -337,7 +337,7 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {filtered.map((poi) => (
                 <POICard
                   key={poi.id}
@@ -356,7 +356,7 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
         </div>
 
         {/* Right column: filter badge + map + detail panel */}
-        <div className="w-72 flex-shrink-0 sticky top-16 h-[580px] flex flex-col gap-2">
+        <div className="w-full lg:w-72 flex-shrink-0 lg:sticky lg:top-16 lg:h-[580px] flex flex-col gap-2">
 
           {/* Active filter badge */}
           {activeCategory !== "todos" && activeCategoryData && (

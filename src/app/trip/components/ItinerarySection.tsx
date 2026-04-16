@@ -6,7 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import {
   IoCalendar, IoCompass, IoRestaurant, IoBed, IoAirplane,
   IoArrowForward, IoLocationSharp, IoStar, IoTrash, IoMap, IoReorderThree, IoClose,
-  IoPencil, IoSwapHorizontal, IoTimeOutline, IoWallet, IoChevronForward,
+  IoPencil, IoSwapHorizontal, IoTimeOutline, IoWallet, IoChevronDown,
 } from "react-icons/io5";
 import type { TripItinerary, ItineraryItem } from "../types";
 import {
@@ -56,15 +56,126 @@ type Props = {
 
 function formatTime(t: string | null | undefined): string {
   if (!t) return "";
-  // HH:MM or HH:MM:SS — just return the first 5 chars
   if (/^\d{2}:\d{2}(:\d{2})?$/.test(t)) return t.slice(0, 5);
-  // ISO datetime string
   try {
     const d = new Date(t);
     if (isNaN(d.getTime())) return t;
     return d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
   } catch { return t; }
 }
+
+function fmt(n: number) {
+  return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+// ── Budget ticket (collapsible) ────────────────────────────────────────────────
+function BudgetTicket({ budget }: { budget: Budget }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const STATUS: Record<string, { badge: string; label: string; bar: string }> = {
+    WITHIN_BUDGET: { badge: "bg-green-100 text-green-700",  label: "En rango",   bar: "bg-green-400" },
+    WARNING:       { badge: "bg-amber-100 text-amber-700",  label: "Advertencia",bar: "bg-amber-400" },
+    OVER_BUDGET:   { badge: "bg-red-100 text-red-600",      label: "Excedido",   bar: "bg-red-400"   },
+    WITHOUT_DATA:  { badge: "bg-gray-100 text-gray-500",    label: "Sin datos",  bar: "bg-gray-300"  },
+  };
+  const s = STATUS[budget.budget_status] ?? STATUS.WITHOUT_DATA;
+  const pct = budget.total_budget > 0
+    ? Math.min((budget.accumulated_cost / budget.total_budget) * 100, 100)
+    : 0;
+
+  return (
+    <div className="bg-white rounded-2xl border border-dashed border-blue-200 shadow-sm overflow-hidden">
+      {/* ── Header — always visible, click to toggle ── */}
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+      >
+        <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center flex-shrink-0">
+          <IoWallet className="text-blue-500 text-sm" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2 mb-0.5">
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">Gastos acumulados</p>
+            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.badge}`}>
+              {s.label}
+            </span>
+          </div>
+          <p className="text-xl font-black text-gray-800 leading-tight">
+            {fmt(budget.accumulated_cost)}{" "}
+            <span className="text-xs font-normal text-gray-400">USD</span>
+          </p>
+        </div>
+        <IoChevronDown
+          className={`text-gray-300 text-base flex-shrink-0 transition-transform duration-200 ${
+            expanded ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {/* ── Progress bar ── */}
+      {budget.total_budget > 0 && (
+        <div className="px-4 pb-3 -mt-1">
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${s.bar}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <p className="text-[9px] text-gray-400 mt-0.5 text-right">
+            {pct.toFixed(0)}% de {fmt(budget.total_budget)}
+          </p>
+        </div>
+      )}
+
+      {/* ── Expanded details ── */}
+      {expanded && (
+        <div className="border-t border-dashed border-blue-100 px-4 py-3 space-y-3">
+          {/* Presupuesto / Disponible */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gray-50 rounded-xl p-2.5">
+              <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Presupuesto</p>
+              <p className="text-sm font-bold text-gray-700 mt-0.5">{fmt(budget.total_budget)}</p>
+            </div>
+            <div className={`rounded-xl p-2.5 ${(budget.available_balance ?? 0) < 0 ? "bg-red-50" : "bg-green-50"}`}>
+              <p className="text-[9px] text-gray-400 font-semibold uppercase tracking-wide">Disponible</p>
+              <p className={`text-sm font-bold mt-0.5 ${(budget.available_balance ?? 0) < 0 ? "text-red-500" : "text-green-600"}`}>
+                {fmt(budget.available_balance ?? 0)}
+              </p>
+            </div>
+          </div>
+
+          {/* Desglose */}
+          <div className="space-y-1.5 border-t border-gray-100 pt-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <IoAirplane className="text-blue-400 text-sm" />
+                <span>Vuelos</span>
+              </div>
+              <span className="text-xs font-semibold text-gray-700">{budget.total_flights}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <IoCompass className="text-blue-400 text-sm" />
+                <span>Lugares</span>
+              </div>
+              <span className="text-xs font-semibold text-gray-700">{budget.total_places}</span>
+            </div>
+            <div className="flex items-center justify-between border-t border-gray-100 pt-1.5">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <IoCalendar className="text-blue-400 text-sm" />
+                <span>Total items</span>
+              </div>
+              <span className="text-xs font-semibold text-gray-700">{budget.total_items}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function ItinerarySection({
   tripId, itinerary, onRemove, onReorder, onEdit, onMove,
@@ -74,10 +185,10 @@ export default function ItinerarySection({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showWeeklyHours, setShowWeeklyHours] = useState(false);
   const [liveHours, setLiveHours] = useState<LiveHours | null>(null);
+  const [showMobileMap, setShowMobileMap] = useState(false);
 
   // ── Budget ──
   const [budget, setBudget] = useState<Budget | null>(null);
-  const [budgetOpen, setBudgetOpen] = useState(false);
 
   useEffect(() => {
     if (!tripId) return;
@@ -105,17 +216,14 @@ export default function ItinerarySection({
   const [movingItem, setMovingItem] = useState<{ item: ItineraryItem; fromDayNumber: number } | null>(null);
   const [moveSaving, setMoveSaving] = useState(false);
 
-  // Fetch hours from Google Places when a POI/restaurant is selected and hours aren't cached
   useEffect(() => {
     if (!selectedId) { setLiveHours(null); return; }
     const item = itinerary.days.flatMap(d => d.items).find(i => i.id === selectedId);
     if (!item || item.type === "hotel" || item.type === "flight") { setLiveHours(null); return; }
-    // If already stored in item, use it directly
     if (item.isOpenNow != null || item.todayHours) {
       setLiveHours({ isOpenNow: item.isOpenNow ?? null, todayHours: item.todayHours ?? null, weeklyHours: item.weeklyHours ?? null });
       return;
     }
-    // Fetch on-demand
     let cancelled = false;
     async function fetchHours() {
       const api = createApiClient(getToken);
@@ -174,17 +282,11 @@ export default function ItinerarySection({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // Single DndContext handler — handles same-day reorder AND cross-day move
   function handleGlobalDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-
-    const activeDay = itinerary.days.find((d) =>
-      d.items.some((i) => (i.itemId ?? i.id) === active.id)
-    );
+    const activeDay = itinerary.days.find((d) => d.items.some((i) => (i.itemId ?? i.id) === active.id));
     if (!activeDay) return;
-
-    // Dropped onto a day container (DroppableDay)?
     const overDay = itinerary.days.find((d) => d.dayId === over.id);
     if (overDay) {
       if (overDay.dayNumber !== activeDay.dayNumber && !overDay.dayId.startsWith("placeholder-") && onMove) {
@@ -193,21 +295,14 @@ export default function ItinerarySection({
       }
       return;
     }
-
-    // Dropped onto another item — find its day
-    const overItemDay = itinerary.days.find((d) =>
-      d.items.some((i) => (i.itemId ?? i.id) === over.id)
-    );
+    const overItemDay = itinerary.days.find((d) => d.items.some((i) => (i.itemId ?? i.id) === over.id));
     if (!overItemDay) return;
-
     if (activeDay.dayNumber === overItemDay.dayNumber) {
-      // Same day — reorder
       const ids = activeDay.items.map((i) => i.itemId ?? i.id);
       const oldIdx = ids.indexOf(active.id as string);
       const newIdx = ids.indexOf(over.id as string);
       if (oldIdx !== newIdx) onReorder?.(activeDay.dayNumber, arrayMove(activeDay.items, oldIdx, newIdx));
     } else if (!overItemDay.dayId.startsWith("placeholder-") && onMove) {
-      // Different day — move
       const activeItem = activeDay.items.find((i) => (i.itemId ?? i.id) === active.id)!;
       onMove(activeItem.itemId ?? activeItem.id, activeDay.dayNumber, overItemDay.dayId);
     }
@@ -242,7 +337,6 @@ export default function ItinerarySection({
       }));
   }, [itinerary.days]);
 
-  // Full item + day from itinerary for the detail panel
   const selectedFullItem = useMemo(() => {
     if (!selectedId) return null;
     for (const day of itinerary.days) {
@@ -254,9 +348,9 @@ export default function ItinerarySection({
 
   const showMap = !!center && mapItems.length > 0;
   const BADGE: Record<string, { label: string; cls: string }> = {
-    poi: { label: "Lugar", cls: "bg-blue-50 text-blue-600" },
+    poi:        { label: "Lugar",       cls: "bg-blue-50 text-blue-600"     },
     restaurant: { label: "Restaurante", cls: "bg-orange-50 text-orange-500" },
-    hotel: { label: "Hotel", cls: "bg-purple-50 text-purple-600" },
+    hotel:      { label: "Hotel",       cls: "bg-purple-50 text-purple-600" },
   };
 
   if (itinerary.days.length === 0 && !hasLocations) {
@@ -271,11 +365,177 @@ export default function ItinerarySection({
     );
   }
 
-  return (
-    <div className="flex gap-0 max-w-6xl mx-auto w-full">
+  // ── Right panel (shared between desktop sidebar + mobile panel) ──────────────
+  const RightPanel = (
+    <div className="flex flex-col gap-3">
 
-      {/* ── Left: scrollable itinerary ── */}
-      <div className="flex-1 min-w-0 px-4 pt-6 pb-10 space-y-8 overflow-y-auto">
+      {/* Budget ticket */}
+      {budget && <BudgetTicket budget={budget} />}
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 text-[10px] text-gray-500 px-1 flex-wrap">
+        <span className="flex items-center gap-1"><IoLocationSharp className="text-blue-500" /> Lugar</span>
+        <span className="flex items-center gap-1"><IoLocationSharp className="text-orange-500" /> Restaurante</span>
+        <span className="flex items-center gap-1"><IoLocationSharp className="text-indigo-500" /> Hotel</span>
+        <div className="flex-1" />
+        <div className="flex items-center gap-1 text-gray-400">
+          <IoMap className="text-xs" />
+          <span>{mapItems.length} lugar{mapItems.length !== 1 ? "es" : ""}</span>
+        </div>
+      </div>
+
+      {/* Map */}
+      <div className="h-56 lg:h-64 rounded-2xl overflow-hidden shadow-md border border-gray-100">
+        <ItineraryMap
+          items={mapItems}
+          selectedId={selectedId}
+          onSelectId={selectItem}
+          center={center!}
+        />
+      </div>
+
+      {/* Detail panel */}
+      {selectedFullItem ? (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex gap-3 p-3">
+            <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
+              {selectedFullItem.item.photoUrl ? (
+                <img src={selectedFullItem.item.photoUrl} alt={selectedFullItem.item.name} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  {selectedFullItem.item.type === "hotel"
+                    ? <IoBed className="text-2xl text-gray-200" />
+                    : selectedFullItem.item.type === "restaurant"
+                    ? <IoRestaurant className="text-2xl text-gray-200" />
+                    : <IoCompass className="text-2xl text-gray-200" />}
+                </div>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-1">
+                <div>
+                  <span className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${BADGE[selectedFullItem.item.type]?.cls}`}>
+                    {BADGE[selectedFullItem.item.type]?.label}
+                  </span>
+                  <span className="ml-1.5 text-[9px] text-gray-400">· Día {selectedFullItem.dayNumber}</span>
+                </div>
+                <button onClick={() => selectItem(null)} className="p-0.5 rounded-full hover:bg-gray-100 flex-shrink-0">
+                  <IoClose className="text-gray-400 text-sm" />
+                </button>
+              </div>
+              <h3 className="font-bold text-gray-800 text-sm leading-snug mt-1 line-clamp-2">
+                {selectedFullItem.item.name}
+              </h3>
+              {selectedFullItem.item.rating && (
+                <div className="flex items-center gap-1 mt-1">
+                  <IoStar className="text-amber-400 text-xs" />
+                  <span className="text-xs font-semibold text-gray-700">{selectedFullItem.item.rating.toFixed(1)}</span>
+                </div>
+              )}
+              {selectedFullItem.item.address && (
+                <div className="flex items-start gap-1 mt-1">
+                  <IoLocationSharp className="text-gray-300 text-xs flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-gray-400 line-clamp-2">{selectedFullItem.item.address}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {liveHours && (liveHours.isOpenNow != null || liveHours.todayHours) && (
+            <div className="px-3 pb-2 border-t border-gray-50 pt-2">
+              <div className="flex items-center justify-between mb-0.5">
+                <div className="flex items-center gap-1">
+                  <IoTimeOutline className="text-gray-400 text-[10px]" />
+                  <span className="text-[10px] font-semibold text-gray-500">Horario de operación</span>
+                </div>
+                {liveHours.isOpenNow != null && (
+                  <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
+                    liveHours.isOpenNow ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
+                  }`}>
+                    {liveHours.isOpenNow ? "Abierto" : "Cerrado"}
+                  </span>
+                )}
+              </div>
+              {liveHours.todayHours && <p className="text-[10px] text-gray-500">{liveHours.todayHours}</p>}
+              {liveHours.weeklyHours && liveHours.weeklyHours.length > 0 && (
+                <>
+                  <button onClick={() => setShowWeeklyHours((v) => !v)} className="text-[9px] text-blue-500 hover:text-blue-700 mt-0.5">
+                    {showWeeklyHours ? "Ver menos" : "Ver semana completa"}
+                  </button>
+                  {showWeeklyHours && (
+                    <ul className="mt-1 space-y-0.5">
+                      {liveHours.weeklyHours.map((line, i) => (
+                        <li key={i} className="text-[9px] text-gray-500">{line}</li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {(selectedFullItem.item.startTime || selectedFullItem.item.endTime) && (
+            <div className="px-3 pb-2 border-t border-gray-50 pt-2">
+              <div className="flex items-center gap-1 mb-0.5">
+                <IoTimeOutline className="text-blue-400 text-[10px]" />
+                <span className="text-[10px] font-semibold text-gray-500">Mi horario</span>
+              </div>
+              <p className="text-[10px] text-gray-600">
+                {formatTime(selectedFullItem.item.startTime)}
+                {selectedFullItem.item.startTime && selectedFullItem.item.endTime && " – "}
+                {formatTime(selectedFullItem.item.endTime)}
+              </p>
+            </div>
+          )}
+
+          {selectedFullItem.item.notes && (
+            <div className="px-3 pb-2 border-t border-gray-50 pt-2">
+              <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Nota</p>
+              <p className="text-[10px] text-gray-600 leading-relaxed">{selectedFullItem.item.notes}</p>
+            </div>
+          )}
+
+          {selectedFullItem.item.description && (
+            <div className="px-3 pb-2 border-t border-gray-50 pt-2">
+              <p className="text-[10px] text-gray-500 leading-relaxed line-clamp-3">{selectedFullItem.item.description}</p>
+            </div>
+          )}
+
+          {!readOnly && (onEdit || (onMove && realDays.length > 1)) && (
+            <div className="flex gap-2 px-3 pb-3 border-t border-gray-50 pt-2">
+              {onEdit && (
+                <button
+                  onClick={() => openEdit(selectedFullItem.item, selectedFullItem.dayNumber)}
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 text-gray-500 text-xs font-semibold transition-colors"
+                >
+                  <IoPencil className="text-xs" /> Editar
+                </button>
+              )}
+              {onMove && realDays.length > 1 && (
+                <button
+                  onClick={() => setMovingItem({ item: selectedFullItem.item, fromDayNumber: selectedFullItem.dayNumber })}
+                  className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-600 text-gray-500 text-xs font-semibold transition-colors"
+                >
+                  <IoSwapHorizontal className="text-xs" /> Mover
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl border border-gray-100 px-4 py-4 text-center">
+          <IoCompass className="text-2xl text-gray-200 mx-auto mb-1" />
+          <p className="text-xs text-gray-400">Toca un marcador o una actividad para ver detalles</p>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-0 max-w-6xl mx-auto w-full">
+
+      {/* ── Left: scrollable itinerary ─────────────────────────────────────── */}
+      <div className="flex-1 min-w-0 px-4 pt-6 pb-10 space-y-8">
 
         {/* Mis ubicaciones */}
         {hasLocations && (
@@ -299,10 +559,7 @@ export default function ItinerarySection({
                     {savedFlight.origin && savedFlight.destination && (
                       <p className="text-[9px] text-gray-500 mt-0.5">{savedFlight.origin} → {savedFlight.destination}</p>
                     )}
-                    {savedFlight.departure && (
-                      <p className="text-[9px] text-gray-400 mt-0.5">{formatTime(savedFlight.departure)}</p>
-                    )}
-                    {savedFlight.price && (
+                    {savedFlight.price != null && (
                       <p className="text-[9px] font-semibold text-blue-600 mt-0.5">${savedFlight.price}</p>
                     )}
                   </div>
@@ -332,7 +589,7 @@ export default function ItinerarySection({
           </div>
         )}
 
-        {/* Summary + budget chip */}
+        {/* Summary row */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-gray-500 text-sm">
             <IoCalendar className="text-blue-400" />
@@ -341,21 +598,26 @@ export default function ItinerarySection({
               {totalItems} actividad{totalItems !== 1 ? "es" : ""}
             </span>
           </div>
-          {budget && (
+          {/* Mobile: show budget ticket inline if no map panel, or toggle map */}
+          {showMap && (
             <button
-              onClick={() => setBudgetOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 hover:bg-blue-50 transition-colors group"
+              onClick={() => setShowMobileMap((v) => !v)}
+              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-xl border border-gray-200 shadow-sm text-xs font-semibold text-gray-600 hover:border-blue-300"
             >
-              <IoWallet className="text-blue-500 text-sm" />
-              <span className="text-xs font-bold text-blue-600">
-                ${(budget.accumulated_cost ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD
-              </span>
-              <IoChevronForward className="text-gray-300 text-xs group-hover:text-blue-400 transition-colors" />
+              <IoMap className="text-blue-400 text-sm" />
+              {showMobileMap ? "Ocultar mapa" : "Ver mapa"}
             </button>
           )}
         </div>
 
-        {/* All days — single DndContext for cross-day drag */}
+        {/* Mobile map panel (toggled) */}
+        {showMap && showMobileMap && (
+          <div className="lg:hidden rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+            {RightPanel}
+          </div>
+        )}
+
+        {/* All days */}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleGlobalDragEnd}>
           <div className="space-y-8">
             {itinerary.days.map((day) => (
@@ -386,7 +648,7 @@ export default function ItinerarySection({
                     strategy={horizontalListSortingStrategy}
                   >
                     <div
-                      className="flex gap-3 overflow-x-auto pb-2 pl-11 pr-4 min-h-[140px]"
+                      className="flex gap-3 overflow-x-auto pb-2 pl-11 pr-4 min-h-[220px]"
                       style={{ scrollbarWidth: "thin", scrollbarColor: "#e5e7eb transparent" }}
                     >
                       {day.items.map((item) => (
@@ -483,19 +745,17 @@ export default function ItinerarySection({
                 Actualmente en <span className="font-semibold text-gray-600">Día {movingItem.fromDayNumber}</span>
               </p>
               <div className="space-y-1.5">
-                {realDays
-                  .filter((d) => d.dayNumber !== movingItem.fromDayNumber)
-                  .map((d) => (
-                    <button key={d.dayId} onClick={() => handleMove(d.dayId)} disabled={moveSaving}
-                      className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-sm text-gray-700 disabled:opacity-50 transition-colors">
-                      <span className="font-semibold">Día {d.dayNumber}</span>
-                      {d.date && (
-                        <span className="text-xs text-gray-400">
-                          {new Date(d.date + "T00:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" })}
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                {realDays.filter((d) => d.dayNumber !== movingItem.fromDayNumber).map((d) => (
+                  <button key={d.dayId} onClick={() => handleMove(d.dayId)} disabled={moveSaving}
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-sm text-gray-700 disabled:opacity-50 transition-colors">
+                    <span className="font-semibold">Día {d.dayNumber}</span>
+                    {d.date && (
+                      <span className="text-xs text-gray-400">
+                        {new Date(d.date + "T00:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short" })}
+                      </span>
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="px-5 pb-5">
@@ -508,268 +768,11 @@ export default function ItinerarySection({
         </div>
       )}
 
-      {/* ── Budget drawer ── */}
-      {budgetOpen && budget && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setBudgetOpen(false)} />
-          <div className="relative w-full max-w-sm bg-white h-full shadow-2xl flex flex-col">
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <IoWallet className="text-blue-500 text-lg" />
-                <h2 className="font-bold text-gray-800 text-base">Resumen de presupuesto</h2>
-              </div>
-              <button onClick={() => setBudgetOpen(false)} className="p-1.5 rounded-full hover:bg-gray-100">
-                <IoClose className="text-gray-400 text-lg" />
-              </button>
-            </div>
-
-            {/* Estado badge + presupuesto total */}
-            {(() => {
-              const ESTADO: Record<string, { bg: string; badge: string; label: string }> = {
-                WITHIN_BUDGET:  { bg: "bg-blue-50 border-blue-100",   badge: "bg-green-100 text-green-700",  label: "En rango" },
-                WARNING:        { bg: "bg-amber-50 border-amber-100", badge: "bg-amber-100 text-amber-700",  label: "Advertencia" },
-                OVER_BUDGET:    { bg: "bg-red-50 border-red-100",     badge: "bg-red-100 text-red-600",      label: "Excedido" },
-                WITHOUT_DATA:   { bg: "bg-gray-50 border-gray-100",   badge: "bg-gray-100 text-gray-500",    label: "Sin datos" },
-              };
-              const s = ESTADO[budget.budget_status] ?? ESTADO.SIN_DATOS;
-              return (
-                <div className={`px-5 py-4 border-b ${s.bg}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Presupuesto total</p>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${s.badge}`}>{s.label}</span>
-                  </div>
-                  <p className="text-3xl font-bold text-gray-800">
-                    ${(budget.total_budget ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    <span className="text-sm font-normal text-gray-400 ml-1">USD</span>
-                  </p>
-                </div>
-              );
-            })()}
-
-            {/* Costo / Balance */}
-            <div className="flex border-b border-gray-100">
-              <div className="flex-1 px-5 py-4 border-r border-gray-100">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Costo acumulado</p>
-                <p className="text-xl font-bold text-gray-800">
-                  ${(budget.accumulated_cost ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </p>
-              </div>
-              <div className="flex-1 px-5 py-4">
-                <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1">Balance disponible</p>
-                <p className={`text-xl font-bold ${(budget.available_balance ?? 0) < 0 ? "text-red-500" : "text-green-600"}`}>
-                  ${(budget.available_balance ?? 0).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </p>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="px-5 py-4 space-y-2">
-              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Desglose</p>
-              <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                <div className="flex items-center gap-2">
-                  <IoAirplane className="text-blue-400 text-sm" />
-                  <span className="text-sm text-gray-600">Vuelos</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-700">{budget.total_flights}</span>
-              </div>
-              <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                <div className="flex items-center gap-2">
-                  <IoCompass className="text-blue-400 text-sm" />
-                  <span className="text-sm text-gray-600">Lugares</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-700">{budget.total_places}</span>
-              </div>
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center gap-2">
-                  <IoCalendar className="text-blue-400 text-sm" />
-                  <span className="text-sm text-gray-600">Total items</span>
-                </div>
-                <span className="text-sm font-semibold text-gray-700">{budget.total_items}</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* ── Right: map + detail panel ── */}
+      {/* ── Right: desktop map + detail panel ─────────────────────────────── */}
       {showMap && (
-        <div className="w-[380px] flex-shrink-0 pr-4 pt-6 pb-10">
-          <div className="sticky top-4 flex flex-col gap-3">
-
-            {/* Legend */}
-            <div className="flex items-center gap-4 text-[10px] text-gray-500 px-1">
-              <span className="flex items-center gap-1"><IoLocationSharp className="text-blue-500" /> Lugar</span>
-              <span className="flex items-center gap-1"><IoLocationSharp className="text-orange-500" /> Restaurante</span>
-              <span className="flex items-center gap-1"><IoLocationSharp className="text-indigo-500" /> Hotel</span>
-              <div className="flex-1" />
-              <div className="flex items-center gap-1 text-gray-400">
-                <IoMap className="text-xs" />
-                <span>{mapItems.length} lugar{mapItems.length !== 1 ? "es" : ""}</span>
-              </div>
-            </div>
-
-            {/* Map */}
-            <div className="h-64 rounded-2xl overflow-hidden shadow-md border border-gray-100">
-              <ItineraryMap
-                items={mapItems}
-                selectedId={selectedId}
-                onSelectId={selectItem}
-                center={center!}
-              />
-            </div>
-
-            {/* Detail panel */}
-            {selectedFullItem ? (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-
-                {/* Photo + basic info */}
-                <div className="flex gap-3 p-3">
-                  <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100">
-                    {selectedFullItem.item.photoUrl ? (
-                      <img src={selectedFullItem.item.photoUrl} alt={selectedFullItem.item.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        {selectedFullItem.item.type === "hotel"
-                          ? <IoBed className="text-2xl text-gray-200" />
-                          : selectedFullItem.item.type === "restaurant"
-                          ? <IoRestaurant className="text-2xl text-gray-200" />
-                          : <IoCompass className="text-2xl text-gray-200" />}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-1">
-                      <div>
-                        <span className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${BADGE[selectedFullItem.item.type]?.cls}`}>
-                          {BADGE[selectedFullItem.item.type]?.label}
-                        </span>
-                        <span className="ml-1.5 text-[9px] text-gray-400">· Día {selectedFullItem.dayNumber}</span>
-                      </div>
-                      <button onClick={() => selectItem(null)} className="p-0.5 rounded-full hover:bg-gray-100 flex-shrink-0">
-                        <IoClose className="text-gray-400 text-sm" />
-                      </button>
-                    </div>
-                    <h3 className="font-bold text-gray-800 text-sm leading-snug mt-1 line-clamp-2">
-                      {selectedFullItem.item.name}
-                    </h3>
-                    {selectedFullItem.item.rating && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <IoStar className="text-amber-400 text-xs" />
-                        <span className="text-xs font-semibold text-gray-700">{selectedFullItem.item.rating.toFixed(1)}</span>
-                      </div>
-                    )}
-                    {selectedFullItem.item.address && (
-                      <div className="flex items-start gap-1 mt-1">
-                        <IoLocationSharp className="text-gray-300 text-xs flex-shrink-0 mt-0.5" />
-                        <p className="text-[10px] text-gray-400 line-clamp-2">{selectedFullItem.item.address}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Horario de operación — usa liveHours (fetched on-demand) */}
-                {liveHours && (liveHours.isOpenNow != null || liveHours.todayHours) && (
-                  <div className="px-3 pb-2 border-t border-gray-50 pt-2">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1">
-                        <IoTimeOutline className="text-gray-400 text-[10px]" />
-                        <span className="text-[10px] font-semibold text-gray-500">Horario de operación</span>
-                      </div>
-                      {liveHours.isOpenNow != null && (
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                          liveHours.isOpenNow ? "bg-green-50 text-green-600" : "bg-red-50 text-red-500"
-                        }`}>
-                          {liveHours.isOpenNow ? "Abierto" : "Cerrado"}
-                        </span>
-                      )}
-                    </div>
-                    {liveHours.todayHours && (
-                      <p className="text-[10px] text-gray-500">{liveHours.todayHours}</p>
-                    )}
-                    {liveHours.weeklyHours && liveHours.weeklyHours.length > 0 && (
-                      <>
-                        <button
-                          onClick={() => setShowWeeklyHours((v) => !v)}
-                          className="text-[9px] text-blue-500 hover:text-blue-700 mt-0.5"
-                        >
-                          {showWeeklyHours ? "Ver menos" : "Ver semana completa"}
-                        </button>
-                        {showWeeklyHours && (
-                          <ul className="mt-1 space-y-0.5">
-                            {liveHours.weeklyHours.map((line, i) => (
-                              <li key={i} className="text-[9px] text-gray-500">{line}</li>
-                            ))}
-                          </ul>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Mi horario */}
-                {(selectedFullItem.item.startTime || selectedFullItem.item.endTime) && (
-                  <div className="px-3 pb-2 border-t border-gray-50 pt-2">
-                    <div className="flex items-center gap-1 mb-0.5">
-                      <IoTimeOutline className="text-blue-400 text-[10px]" />
-                      <span className="text-[10px] font-semibold text-gray-500">Mi horario</span>
-                    </div>
-                    <p className="text-[10px] text-gray-600">
-                      {formatTime(selectedFullItem.item.startTime)}
-                      {selectedFullItem.item.startTime && selectedFullItem.item.endTime && " – "}
-                      {formatTime(selectedFullItem.item.endTime)}
-                    </p>
-                  </div>
-                )}
-
-                {/* Notas */}
-                {selectedFullItem.item.notes && (
-                  <div className="px-3 pb-2 border-t border-gray-50 pt-2">
-                    <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Nota</p>
-                    <p className="text-[10px] text-gray-600 leading-relaxed">{selectedFullItem.item.notes}</p>
-                  </div>
-                )}
-
-                {/* Descripción */}
-                {selectedFullItem.item.description && (
-                  <div className="px-3 pb-2 border-t border-gray-50 pt-2">
-                    <p className="text-[10px] text-gray-500 leading-relaxed line-clamp-3">
-                      {selectedFullItem.item.description}
-                    </p>
-                  </div>
-                )}
-
-                {/* Editar / Mover */}
-                {!readOnly && (onEdit || (onMove && realDays.length > 1)) && (
-                  <div className="flex gap-2 px-3 pb-3 border-t border-gray-50 pt-2">
-                    {onEdit && (
-                      <button
-                        onClick={() => openEdit(selectedFullItem.item, selectedFullItem.dayNumber)}
-                        className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 text-gray-500 text-xs font-semibold transition-colors"
-                      >
-                        <IoPencil className="text-xs" /> Editar
-                      </button>
-                    )}
-                    {onMove && realDays.length > 1 && (
-                      <button
-                        onClick={() => setMovingItem({ item: selectedFullItem.item, fromDayNumber: selectedFullItem.dayNumber })}
-                        className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-gray-200 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-600 text-gray-500 text-xs font-semibold transition-colors"
-                      >
-                        <IoSwapHorizontal className="text-xs" /> Mover
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 px-4 py-4 text-center">
-                <IoCompass className="text-2xl text-gray-200 mx-auto mb-1" />
-                <p className="text-xs text-gray-400">Toca un marcador o una actividad para ver detalles</p>
-              </div>
-            )}
-
+        <div className="hidden lg:block w-[380px] flex-shrink-0 pr-4 pt-6 pb-10">
+          <div className="sticky top-4">
+            {RightPanel}
           </div>
         </div>
       )}
@@ -777,7 +780,7 @@ export default function ItinerarySection({
   );
 }
 
-// Droppable day container — highlights when dragging over it
+// ── Droppable day ─────────────────────────────────────────────────────────────
 function DroppableDay({ id, readOnly, children }: { id: string; readOnly?: boolean; children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({
     id,
@@ -793,6 +796,7 @@ function DroppableDay({ id, readOnly, children }: { id: string; readOnly?: boole
   );
 }
 
+// ── Sortable wrapper ──────────────────────────────────────────────────────────
 function SortableItineraryCard(props: {
   item: ItineraryItem;
   selected: boolean;
@@ -816,13 +820,14 @@ function SortableItineraryCard(props: {
         opacity: isDragging ? 0.4 : 1,
         zIndex: isDragging ? 50 : undefined,
       }}
-      className="w-44 flex-shrink-0"
+      className="w-52 flex-shrink-0"
     >
       <ItineraryCard {...props} dragHandleProps={!props.readOnly ? { ...attributes, ...listeners } : undefined} />
     </div>
   );
 }
 
+// ── Itinerary card ────────────────────────────────────────────────────────────
 function ItineraryCard({
   item,
   selected,
@@ -842,7 +847,7 @@ function ItineraryCard({
 }) {
   if (item.type === "flight") {
     return (
-      <div className="relative bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 group">
+      <div className="relative bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 group h-[200px] flex flex-col">
         {!readOnly && (
           <>
             <button onClick={onRemove} title="Eliminar"
@@ -855,18 +860,20 @@ function ItineraryCard({
             </div>
           </>
         )}
-        <div className="w-full h-24 bg-blue-50 flex items-center justify-center">
+        <div className="w-full h-28 bg-blue-50 flex items-center justify-center flex-shrink-0">
           <IoAirplane className="text-3xl text-blue-300" />
         </div>
-        <div className="p-2.5">
-          <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">Vuelo</span>
-          <h3 className="font-semibold text-gray-800 text-xs leading-tight line-clamp-1 mt-1">{item.name}</h3>
-          {item.address && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <IoArrowForward className="text-gray-300 text-[9px] flex-shrink-0" />
-              <p className="text-[9px] text-gray-400">{item.address}</p>
-            </div>
-          )}
+        <div className="p-2.5 flex-1 flex flex-col justify-between overflow-hidden">
+          <div>
+            <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600">Vuelo</span>
+            <h3 className="font-semibold text-gray-800 text-xs leading-tight line-clamp-1 mt-1">{item.name}</h3>
+            {item.address && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <IoArrowForward className="text-gray-300 text-[9px] flex-shrink-0" />
+                <p className="text-[9px] text-gray-400 line-clamp-1">{item.address}</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -877,7 +884,7 @@ function ItineraryCard({
   return (
     <div
       onClick={onSelect}
-      className={`relative bg-white rounded-xl overflow-hidden shadow-sm border transition-all duration-150 cursor-pointer group ${
+      className={`relative bg-white rounded-xl overflow-hidden shadow-sm border transition-all duration-150 cursor-pointer group h-[200px] flex flex-col ${
         selected ? "border-blue-400 shadow-md ring-1 ring-blue-200" : "border-gray-100 hover:border-gray-300"
       }`}
     >
@@ -900,7 +907,8 @@ function ItineraryCard({
         </>
       )}
 
-      <div className="w-full h-24 bg-gray-100 overflow-hidden">
+      {/* Image */}
+      <div className="w-full h-28 bg-gray-100 overflow-hidden flex-shrink-0">
         {item.photoUrl ? (
           <img src={item.photoUrl} alt={item.name} className="w-full h-full object-cover" />
         ) : (
@@ -910,38 +918,39 @@ function ItineraryCard({
         )}
       </div>
 
-      <div className="p-2.5">
-        <span className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
-          item.type === "poi" ? "bg-blue-50 text-blue-600"
-          : item.type === "hotel" ? "bg-purple-50 text-purple-600"
-          : "bg-orange-50 text-orange-500"
-        }`}>
-          {item.type === "poi" ? "Lugar" : item.type === "hotel" ? "Hotel" : "Restaurante"}
-        </span>
+      {/* Content — fills remaining space, overflow hidden */}
+      <div className="p-2.5 flex-1 flex flex-col justify-between overflow-hidden">
+        <div>
+          <span className={`text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
+            item.type === "poi" ? "bg-blue-50 text-blue-600"
+            : item.type === "hotel" ? "bg-purple-50 text-purple-600"
+            : "bg-orange-50 text-orange-500"
+          }`}>
+            {item.type === "poi" ? "Lugar" : item.type === "hotel" ? "Hotel" : "Restaurante"}
+          </span>
+          <h3 className="font-semibold text-gray-800 text-xs leading-tight line-clamp-2 mt-1">{item.name}</h3>
+        </div>
 
-        <h3 className="font-semibold text-gray-800 text-xs leading-tight line-clamp-2 mt-1">{item.name}</h3>
-
-        {item.rating && (
-          <div className="flex items-center gap-1 mt-1">
-            <IoStar className="text-amber-400 text-[10px]" />
-            <span className="text-[10px] text-gray-600">{item.rating.toFixed(1)}</span>
-            {item.priceLevel && <span className="text-[10px] text-gray-400 ml-1">{item.priceLevel}</span>}
+        <div className="space-y-0.5 mt-1">
+          {item.rating && (
+            <div className="flex items-center gap-1">
+              <IoStar className="text-amber-400 text-[10px]" />
+              <span className="text-[10px] text-gray-600">{item.rating.toFixed(1)}</span>
+              {item.priceLevel && <span className="text-[10px] text-gray-400 ml-1">{item.priceLevel}</span>}
+            </div>
+          )}
+          {(item.startTime || item.endTime) && (
+            <div className="flex items-center gap-1">
+              <IoTimeOutline className="text-blue-400 text-[9px]" />
+              <span className="text-[9px] text-gray-500">
+                {formatTime(item.startTime)}{item.startTime && item.endTime ? "–" : ""}{formatTime(item.endTime)}
+              </span>
+            </div>
+          )}
+          <div className="flex items-start gap-1">
+            <IoLocationSharp className="text-gray-400 text-[9px] flex-shrink-0 mt-0.5" />
+            <p className="text-[9px] text-gray-400 line-clamp-1">{item.address}</p>
           </div>
-        )}
-
-        {/* Time set by user */}
-        {(item.startTime || item.endTime) && (
-          <div className="flex items-center gap-1 mt-1">
-            <IoTimeOutline className="text-blue-400 text-[9px]" />
-            <span className="text-[9px] text-gray-500">
-              {formatTime(item.startTime)}{item.startTime && item.endTime ? "–" : ""}{formatTime(item.endTime)}
-            </span>
-          </div>
-        )}
-
-        <div className="flex items-start gap-1 mt-1.5">
-          <IoLocationSharp className="text-gray-400 text-[9px] flex-shrink-0 mt-0.5" />
-          <p className="text-[9px] text-gray-400 line-clamp-1">{item.address}</p>
         </div>
       </div>
     </div>
