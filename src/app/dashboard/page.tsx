@@ -74,9 +74,9 @@ function DashboardContent() {
   }
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
-      <Header variant="dark" onSearch={handleSearch} />
-      <div className="absolute inset-0">
+    <div className="h-screen flex flex-col overflow-hidden">
+      <Header variant="light" onSearch={handleSearch} />
+      <div className="relative flex-1">
         <MapView onPlaceSelect={(place) => { setSelectedPlace(place); setFromWishlist(false); }} flyTo={flyTo} />
         {selectedPlace && !wizardPlace && (
           <DestinationCard

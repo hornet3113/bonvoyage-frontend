@@ -580,7 +580,7 @@ function TripPageContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <Header variant="dark" />
+      <Header variant="light" />
       <TripNav active={activeSection} onChange={handleSectionChange} />
 
       {/* Status bar */}

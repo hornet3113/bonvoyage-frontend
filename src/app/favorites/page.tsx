@@ -47,7 +47,7 @@ export default function FavoritesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header variant="dark" />
+      <Header variant="light" />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Favoritos</h1>

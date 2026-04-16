@@ -107,8 +107,8 @@ export default function MyTripsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header variant="dark" />
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      <Header variant="light" />
 
       {/* Split layout: list left, map right */}
       <div className="flex flex-1 overflow-hidden">
@@ -237,8 +237,8 @@ export default function MyTripsPage() {
           )}
         </div>
 
-        {/* ── Right: sticky world map ── */}
-        <div className="hidden lg:block flex-1 sticky top-0 h-[calc(100vh-48px)] p-4">
+        {/* ── Right: world map ── */}
+        <div className="hidden lg:block flex-1 p-4">
           <TripsMapView trips={trips} />
         </div>
 

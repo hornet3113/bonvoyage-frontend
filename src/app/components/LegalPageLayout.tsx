@@ -22,7 +22,7 @@ export default function LegalPageLayout({
 }: LegalPageLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
-      <Header variant="dark" useLandingMenus />
+      <Header variant="light" useLandingMenus />
 
       {/* Hero header */}
       <div className="bg-slate-900 border-b border-slate-800 pt-20 pb-12 px-6 md:px-16">
