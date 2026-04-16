@@ -176,19 +176,24 @@ export default function RestaurantsSection({ destination, tripDays, onAddToItine
   }
 
   return (
-    <div className="px-4 max-w-7xl mx-auto pt-6 pb-8 space-y-4">
+    <div className="px-6 max-w-6xl mx-auto pt-6 pb-8 space-y-4">
 
       {/* Search + filters bar */}
       <div className="space-y-3">
-        <div className="relative max-w-sm">
-          <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar restaurante..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
-          />
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <IoSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar restaurante…"
+              className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-transparent transition"
+            />
+          </div>
+          <span className="text-xs text-gray-400 whitespace-nowrap">
+            {filtered.length} {filtered.length === 1 ? "lugar" : "lugares"}
+          </span>
         </div>
 
         {/* Category chips */}
@@ -525,18 +530,28 @@ function RestaurantCard({
       </div>
 
       {/* Info */}
-      <div className="p-3">
-        <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-1">
+      <div className="p-3 space-y-1.5">
+        <h3 className="font-bold text-gray-900 text-sm leading-tight line-clamp-1">
           {place.name}
         </h3>
-        {place.description && (
-          <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-1 leading-relaxed">
-            {place.description}
-          </p>
-        )}
-        <div className="flex items-center gap-1 mt-1">
-          <IoLocationSharp className="text-gray-400 text-[9px] flex-shrink-0" />
-          <p className="text-[10px] text-gray-400 line-clamp-1">{place.address}</p>
+        <div className="flex items-center gap-1.5">
+          <IoLocationSharp className="text-blue-500 text-xs flex-shrink-0" />
+          <p className="text-[11px] text-gray-500 line-clamp-1 leading-relaxed">{place.address}</p>
+        </div>
+        <div className="flex items-center justify-between pt-0.5">
+          {place.isOpenNow != null ? (
+            <span className={`text-[9px] font-semibold px-2 py-0.5 rounded-full ${
+              place.isOpenNow ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
+            }`}>
+              {place.isOpenNow ? "Abierto" : "Cerrado"}
+            </span>
+          ) : <span />}
+          {place.priceLevel && (
+            <div className="flex items-center gap-0.5 text-gray-400">
+              <IoPricetag className="text-[9px]" />
+              <span className="text-[10px] font-medium">{place.priceLevel}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

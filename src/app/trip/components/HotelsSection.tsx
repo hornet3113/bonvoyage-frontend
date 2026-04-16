@@ -171,7 +171,7 @@ export default function HotelsSection({
     .map(toMapPlace);
 
   return (
-    <div className="px-4 max-w-7xl mx-auto pt-6 pb-8 space-y-5">
+    <div className="px-6 max-w-6xl mx-auto pt-6 pb-8 space-y-5">
 
       {/* Search form */}
       <form
@@ -297,6 +297,7 @@ export default function HotelsSection({
                     hotel={hotel}
                     selected={selectedId === id}
                     saved={savedId === id}
+                    destinationName={destination.name}
                     onClick={() => setSelectedId(id)}
                   />
                 );
@@ -403,11 +404,13 @@ function HotelCard({
   hotel,
   selected,
   saved,
+  destinationName,
   onClick,
 }: {
   hotel: Hotel;
   selected: boolean;
   saved: boolean;
+  destinationName: string;
   onClick: () => void;
 }) {
   return (
@@ -458,10 +461,25 @@ function HotelCard({
       </div>
 
       {/* Info */}
-      <div className="p-3">
-        <h3 className="font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
+      <div className="p-3 space-y-1.5">
+        <h3 className="font-bold text-gray-900 text-sm leading-tight line-clamp-1">
           {hotel.name}
         </h3>
+        <div className="flex items-center gap-1.5">
+          <IoLocationSharp className="text-blue-500 text-xs flex-shrink-0" />
+          <p className="text-[11px] text-gray-500 line-clamp-1">{destinationName}</p>
+        </div>
+        <div className="flex items-center justify-between pt-0.5">
+          {hotel.rating && hotel.rating !== "N/A" ? (
+            <div className="flex items-center gap-1">
+              <IoStar className="text-amber-400 text-[10px]" />
+              <span className="text-[10px] font-semibold text-gray-700">{hotel.rating}</span>
+            </div>
+          ) : <span />}
+          {hotel.price && hotel.price !== "Precio no disponible" && (
+            <span className="text-[10px] font-bold text-gray-800">{hotel.price}<span className="text-[9px] font-normal text-gray-400"> /noche</span></span>
+          )}
+        </div>
       </div>
     </div>
   );
