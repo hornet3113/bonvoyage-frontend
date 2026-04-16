@@ -63,7 +63,7 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
         ? [...landingMenus, { label: "DiscoveryMap", href: "/dashboard" }]
         : landingMenus;
     const menus = isLanding ? baseLandingMenus : appMenus;
-
+// checando si si se hixo bien el efecto vidrio
     // ── Glass / full-width variant ─────────────────────────────────────────────
     if (isGlass) {
         return (
