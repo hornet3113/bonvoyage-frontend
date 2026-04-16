@@ -5,8 +5,11 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { IoAirplane, IoCalendarOutline, IoChevronForward, IoHeart, IoHeartOutline, IoTrashOutline, IoSearchOutline, IoClose } from "react-icons/io5";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import Header from "@/app/components/Header";
 import { createApiClient } from "@/lib/api";
+
+const TripsMapView = dynamic(() => import("./components/TripsMapView"), { ssr: false });
 
 type Trip = {
   trip_id: string;
@@ -104,132 +107,141 @@ export default function MyTripsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header variant="dark" />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Mis viajes</h1>
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition-colors"
-          >
-            <IoAirplane className="text-base" />
-            Nuevo viaje
-          </Link>
-        </div>
+      {/* Split layout: list left, map right */}
+      <div className="flex flex-1 overflow-hidden">
 
-        {/* Search + filters */}
-        {!loading && trips.length > 0 && (
-          <div className="space-y-3 mb-5">
-            {/* Search bar */}
-            <div className="relative">
-              <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nombre o destino..."
-                className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent shadow-sm"
-              />
-              {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  <IoClose className="text-base" />
-                </button>
-              )}
-            </div>
-
-            {/* Status filters */}
-            <div className="flex gap-2 flex-wrap">
-              {Object.keys(STATUS_LABELS).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-                    statusFilter === s
-                      ? "bg-blue-500 text-white"
-                      : "bg-white text-gray-500 border border-gray-200 hover:border-blue-300 hover:text-blue-500"
-                  }`}
-                >
-                  {STATUS_LABELS[s]}
-                  {s !== "ALL" && (
-                    <span className={`ml-1.5 ${statusFilter === s ? "text-blue-200" : "text-gray-300"}`}>
-                      {trips.filter((t) => t.status === s).length}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {loading && (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-100 h-24 animate-pulse" />
-            ))}
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-            <IoAirplane className="text-5xl text-gray-200 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm">{error}</p>
-          </div>
-        )}
-
-        {!loading && !error && trips.length === 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-            <IoAirplane className="text-5xl text-gray-200 mx-auto mb-4" />
-            <p className="text-gray-500 text-sm font-medium">Aún no tienes viajes creados</p>
-            <p className="text-gray-400 text-xs mt-1 mb-4">Empieza buscando un destino en el mapa</p>
-            <Link href="/dashboard" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl hover:bg-blue-600 transition-colors">
-              Explorar destinos
+        {/* ── Left: trips list ── */}
+        <div className="w-full lg:w-[480px] xl:w-[520px] flex-shrink-0 overflow-y-auto px-4 py-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-800">Mis viajes</h1>
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl transition-colors"
+            >
+              <IoAirplane className="text-base" />
+              Nuevo viaje
             </Link>
           </div>
-        )}
 
-        {!loading && trips.length > 0 && filteredTrips.length === 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
-            <IoSearchOutline className="text-4xl text-gray-200 mx-auto mb-3" />
-            <p className="text-gray-500 text-sm font-medium">Sin resultados</p>
-            <p className="text-gray-400 text-xs mt-1">Intenta con otro nombre, destino o estado</p>
-            <button
-              onClick={() => { setSearch(""); setStatusFilter("ALL"); }}
-              className="mt-3 text-xs text-blue-500 hover:text-blue-600 font-semibold"
-            >
-              Limpiar filtros
-            </button>
-          </div>
-        )}
+          {/* Search + filters */}
+          {!loading && trips.length > 0 && (
+            <div className="space-y-3">
+              <div className="relative">
+                <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar por nombre o destino..."
+                  className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent shadow-sm"
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <IoClose className="text-base" />
+                  </button>
+                )}
+              </div>
 
-        {!loading && filteredTrips.length > 0 && (
-          <div className="space-y-3">
-            {filteredTrips.map((trip) => (
-              <TripCard
-                key={trip.trip_id}
-                trip={trip}
-                toggling={toggling.has(trip.trip_id)}
-                confirmingDelete={confirmDelete === trip.trip_id}
-                deleting={deleting.has(trip.trip_id)}
-                onToggleFavorite={() => handleToggleFavorite(trip.trip_id, trip.is_favorite)}
-                onRequestDelete={() => setConfirmDelete(trip.trip_id)}
-                onCancelDelete={() => setConfirmDelete(null)}
-                onConfirmDelete={() => handleDeleteTrip(trip.trip_id)}
-                onClick={() => {
-                  const params = new URLSearchParams({
-                    tripId: trip.trip_id,
-                    name: trip.destination_city ?? trip.destination_name ?? trip.trip_name,
-                  });
-                  if (trip.start_date) params.set("startDate", trip.start_date.slice(0, 10));
-                  if (trip.end_date) params.set("endDate", trip.end_date.slice(0, 10));
-                  if (trip.destination_image) params.set("photoUrl", trip.destination_image);
-                  router.push(`/trip?${params.toString()}`);
-                }}
-              />
-            ))}
-          </div>
-        )}
+              <div className="flex gap-2 flex-wrap">
+                {Object.keys(STATUS_LABELS).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
+                      statusFilter === s
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-gray-500 border border-gray-200 hover:border-blue-300 hover:text-blue-500"
+                    }`}
+                  >
+                    {STATUS_LABELS[s]}
+                    {s !== "ALL" && (
+                      <span className={`ml-1.5 ${statusFilter === s ? "text-blue-200" : "text-gray-300"}`}>
+                        {trips.filter((t) => t.status === s).length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {loading && (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-2xl border border-gray-100 h-24 animate-pulse" />
+              ))}
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+              <IoAirplane className="text-5xl text-gray-200 mx-auto mb-4" />
+              <p className="text-gray-500 text-sm">{error}</p>
+            </div>
+          )}
+
+          {!loading && !error && trips.length === 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+              <IoAirplane className="text-5xl text-gray-200 mx-auto mb-4" />
+              <p className="text-gray-500 text-sm font-medium">Aún no tienes viajes creados</p>
+              <p className="text-gray-400 text-xs mt-1 mb-4">Empieza buscando un destino en el mapa</p>
+              <Link href="/dashboard" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm font-semibold rounded-xl hover:bg-blue-600 transition-colors">
+                Explorar destinos
+              </Link>
+            </div>
+          )}
+
+          {!loading && trips.length > 0 && filteredTrips.length === 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+              <IoSearchOutline className="text-4xl text-gray-200 mx-auto mb-3" />
+              <p className="text-gray-500 text-sm font-medium">Sin resultados</p>
+              <p className="text-gray-400 text-xs mt-1">Intenta con otro nombre, destino o estado</p>
+              <button
+                onClick={() => { setSearch(""); setStatusFilter("ALL"); }}
+                className="mt-3 text-xs text-blue-500 hover:text-blue-600 font-semibold"
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          )}
+
+          {!loading && filteredTrips.length > 0 && (
+            <div className="space-y-3">
+              {filteredTrips.map((trip) => (
+                <TripCard
+                  key={trip.trip_id}
+                  trip={trip}
+                  toggling={toggling.has(trip.trip_id)}
+                  confirmingDelete={confirmDelete === trip.trip_id}
+                  deleting={deleting.has(trip.trip_id)}
+                  onToggleFavorite={() => handleToggleFavorite(trip.trip_id, trip.is_favorite)}
+                  onRequestDelete={() => setConfirmDelete(trip.trip_id)}
+                  onCancelDelete={() => setConfirmDelete(null)}
+                  onConfirmDelete={() => handleDeleteTrip(trip.trip_id)}
+                  onClick={() => {
+                    const params = new URLSearchParams({
+                      tripId: trip.trip_id,
+                      name: trip.destination_city ?? trip.destination_name ?? trip.trip_name,
+                    });
+                    if (trip.start_date) params.set("startDate", trip.start_date.slice(0, 10));
+                    if (trip.end_date) params.set("endDate", trip.end_date.slice(0, 10));
+                    if (trip.destination_image) params.set("photoUrl", trip.destination_image);
+                    router.push(`/trip?${params.toString()}`);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Right: sticky world map ── */}
+        <div className="hidden lg:block flex-1 sticky top-0 h-[calc(100vh-48px)] p-4">
+          <TripsMapView trips={trips} />
+        </div>
+
       </div>
     </div>
   );
