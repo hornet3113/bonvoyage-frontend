@@ -457,22 +457,16 @@ function HotelCard({
         <h3 className="font-bold text-gray-900 text-sm leading-tight line-clamp-1">
           {hotel.name}
         </h3>
-        <div className="flex items-center gap-1">
+
+        {hotel.price && hotel.price !== "Precio no disponible" && (
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            Desde <span className="font-semibold text-gray-700">{hotel.price}</span> por noche
+          </p>
+        )}
+
+        <div className="flex items-center gap-1 pt-0.5">
           <IoLocationSharp className="text-blue-400 text-xs flex-shrink-0" />
           <span className="text-[11px] text-gray-500 line-clamp-1">{destinationName}</span>
-        </div>
-        <div className="flex items-center justify-between pt-0.5">
-          {hotel.rating && hotel.rating !== "N/A" ? (
-            <div className="flex items-center gap-1">
-              <IoStar className="text-amber-400 text-[10px]" />
-              <span className="text-[11px] font-semibold text-gray-700">{hotel.rating}</span>
-            </div>
-          ) : <span />}
-          {hotel.price && hotel.price !== "Precio no disponible" && (
-            <span className="text-xs font-bold text-gray-800">
-              {hotel.price} <span className="text-[9px] font-normal text-gray-400">/ noche</span>
-            </span>
-          )}
         </div>
       </div>
     </div>

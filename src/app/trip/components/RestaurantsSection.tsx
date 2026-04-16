@@ -516,31 +516,16 @@ function RestaurantCard({
         <h3 className="font-bold text-gray-900 text-sm leading-tight line-clamp-1">
           {place.name}
         </h3>
-        <div className="flex items-center gap-1">
+
+        {place.description && (
+          <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
+            {place.description}
+          </p>
+        )}
+
+        <div className="flex items-center gap-1 pt-0.5">
           <IoLocationSharp className="text-blue-400 text-xs flex-shrink-0" />
           <span className="text-[11px] text-gray-500 line-clamp-1">{place.address}</span>
-        </div>
-        <div className="flex items-center justify-between pt-0.5">
-          {place.rating ? (
-            <div className="flex items-center gap-1">
-              <IoStar className="text-amber-400 text-[10px]" />
-              <span className="text-[11px] font-semibold text-gray-700">{place.rating.toFixed(1)}</span>
-              {place.ratingCount && (
-                <span className="text-[10px] text-gray-400">
-                  ({place.ratingCount > 999 ? `${(place.ratingCount / 1000).toFixed(1)}k` : place.ratingCount})
-                </span>
-              )}
-            </div>
-          ) : <span />}
-          {place.isOpenNow != null ? (
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-              place.isOpenNow ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
-            }`}>
-              {place.isOpenNow ? "Abierto" : "Cerrado"}
-            </span>
-          ) : place.priceLevel ? (
-            <span className="text-[10px] font-semibold text-gray-600">{place.priceLevel}</span>
-          ) : null}
         </div>
       </div>
     </div>

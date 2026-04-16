@@ -517,38 +517,21 @@ function POICard({
         )}
       </div>
 
-      {/* ── Info section (separada de la imagen) ── */}
+      {/* ── Info section ── */}
       <div className="p-3 space-y-1.5">
         <h3 className="font-bold text-gray-900 text-sm leading-tight line-clamp-1">
           {poi.name}
         </h3>
 
-        <div className="flex items-center gap-1">
+        {poi.description && (
+          <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
+            {poi.description}
+          </p>
+        )}
+
+        <div className="flex items-center gap-1 pt-0.5">
           <IoLocationSharp className="text-blue-400 text-xs flex-shrink-0" />
           <span className="text-[11px] text-gray-500 line-clamp-1">{poi.address}</span>
-        </div>
-
-        <div className="flex items-center justify-between pt-0.5">
-          {poi.rating ? (
-            <div className="flex items-center gap-1">
-              <IoStar className="text-amber-400 text-[10px]" />
-              <span className="text-[11px] font-semibold text-gray-700">{poi.rating.toFixed(1)}</span>
-              {poi.ratingCount && (
-                <span className="text-[10px] text-gray-400">
-                  ({poi.ratingCount > 999 ? `${(poi.ratingCount / 1000).toFixed(1)}k` : poi.ratingCount})
-                </span>
-              )}
-            </div>
-          ) : <span />}
-          {poi.isOpenNow != null ? (
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-              poi.isOpenNow ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-500"
-            }`}>
-              {poi.isOpenNow ? "Abierto" : "Cerrado"}
-            </span>
-          ) : poi.priceLevel ? (
-            <span className="text-[10px] font-semibold text-gray-600">{poi.priceLevel}</span>
-          ) : null}
         </div>
       </div>
     </div>
