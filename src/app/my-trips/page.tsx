@@ -105,7 +105,7 @@ export default function MyTripsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header variant="light" />
+      <Header variant="dark" />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">

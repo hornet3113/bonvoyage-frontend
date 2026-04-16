@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import TripHeader from "./components/TripHeader";
+import Header from "@/app/components/Header";
 import TripNav from "./components/TripNav";
 import FlightsSection from "./components/FlightsSection";
 import HotelsSection from "./components/HotelsSection";
@@ -580,7 +580,7 @@ function TripPageContent() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
-      <TripHeader />
+      <Header variant="dark" />
       <TripNav active={activeSection} onChange={handleSectionChange} />
 
       {/* Status bar */}

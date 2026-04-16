@@ -56,7 +56,6 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
         }
     };
 
-    const isLight = variant === "light";
     const isGlass = variant === "glass";
     const isLanding = useLandingMenus || pathname === "/";
     const baseLandingMenus = isSignedIn
@@ -203,27 +202,24 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
         );
     }
 
-    // ── Light / dark variants (existentes) ─────────────────────────────────────
-    const containerClass = isLight
-        ? "w-full flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-xs font-medium uppercase bg-white border-b border-gray-100 md:px-10"
-        : "absolute mt-5 flex w-full flex-wrap items-center justify-between gap-2 px-5 text-xs font-medium uppercase opacity-90 md:px-10";
-
-    const textClass = isLight ? "text-gray-700" : "text-white";
-    const menuHoverClass = isLight
-        ? "border-b-blue-500 transition duration-300 ease-in-out hover:border-b-2 hover:text-gray-900"
-        : "border-b-blue-500 transition duration-300 ease-in-out hover:border-b-2 hover:text-white";
-    const activeBorderClass = isLight ? "border-b-2 border-b-blue-500 text-gray-900" : "border-b-2 border-b-blue-500";
+    // ── Dark variant ─────────────────────────────────────────────────────────────
+    const isOnLanding = pathname === "/";
+    const containerClass = isOnLanding
+        ? "absolute mt-5 flex w-full flex-wrap items-center justify-between gap-2 px-5 text-xs font-medium uppercase opacity-90 md:px-10"
+        : "sticky top-0 z-50 w-full flex items-center justify-between gap-4 px-5 md:px-10 py-3 bg-gray-950/95 backdrop-blur-sm border-b border-white/10 text-xs font-medium uppercase";
 
     return (
         <div className={containerClass}>
-            <div className={`flex items-center gap-2 font-medium tracking-[4px] ${textClass}`}>
+            <div className="flex items-center gap-2 font-medium tracking-[4px] text-white">
                 <IoIosGlobe className="text-xl"/>
                 Bon Voyage
             </div>
-            <ul className={`flex flex-wrap items-center gap-3 text-[11px] md:gap-10 ${textClass}`}>
+
+            <ul className="flex flex-wrap items-center gap-3 text-[11px] text-white md:gap-10">
                 {menus.map(({ label, href }) => {
                     const isAnchor = href.includes("#");
                     const anchorId = isAnchor ? href.split("#")[1] : null;
+                    const isActive = pathname === href;
 
                     const handleAnchorClick = (e: React.MouseEvent) => {
                         if (!anchorId) return;
@@ -238,7 +234,7 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                         <motion.li
                             layout
                             key={href}
-                            className={`${pathname === href ? activeBorderClass : ""} inline-block cursor-pointer ${menuHoverClass}`}
+                            className={`${isActive ? "border-b-2 border-b-blue-500" : ""} inline-block cursor-pointer border-b-blue-500 transition duration-300 ease-in-out hover:border-b-2 hover:text-white`}
                             whileTap={{ scale: 0.93 }}
                         >
                             {isAnchor ? (
@@ -249,28 +245,54 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                         </motion.li>
                     );
                 })}
+            </ul>
 
-                {isLight && (
-                    <li>
-                        <form onSubmit={handleSearch} className="flex items-center gap-1 border-b border-gray-300 pb-0.5">
-                            <input
-                                type="text"
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                placeholder="¿A dónde vas a viajar?"
-                                className="bg-transparent outline-none text-[11px] uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal w-32 md:w-44 placeholder:text-gray-400 text-gray-700"
-                            />
-                            <button type="submit" disabled={loading} className="text-gray-500 hover:text-gray-800 transition-colors">
-                                <IoSearchOutline className="text-base" />
-                            </button>
-                        </form>
-                    </li>
-                )}
+            {/* Right side: expandable search + auth */}
+            <div className="flex items-center gap-3 shrink-0">
+                {/* Expandable search */}
+                <form
+                    onSubmit={handleSearch}
+                    className="hidden md:flex items-center justify-end"
+                    onMouseEnter={() => { setSearchOpen(true); setTimeout(() => inputRef.current?.focus(), 50); }}
+                    onMouseLeave={() => { if (!query) setSearchOpen(false); }}
+                >
+                    <motion.div
+                        layout
+                        className="flex items-center rounded-full border border-white/20 bg-white/10 overflow-hidden"
+                        style={{ paddingLeft: searchOpen ? "0.75rem" : 0 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                    >
+                        <AnimatePresence>
+                            {searchOpen && (
+                                <motion.input
+                                    key="search-input"
+                                    ref={inputRef}
+                                    initial={{ width: 0, opacity: 0 }}
+                                    animate={{ width: 140, opacity: 1 }}
+                                    exit={{ width: 0, opacity: 0 }}
+                                    transition={{ duration: 0.25, ease: "easeOut" }}
+                                    type="text"
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    placeholder="Buscar destino..."
+                                    className="bg-transparent outline-none text-[11px] text-white placeholder:text-white/40 pr-1"
+                                />
+                            )}
+                        </AnimatePresence>
+                        <button
+                            type={searchOpen && query ? "submit" : "button"}
+                            disabled={loading}
+                            className="flex items-center justify-center w-8 h-8 text-white/70 hover:text-cyan-400 transition-colors duration-200"
+                        >
+                            <IoSearchOutline className="text-base" />
+                        </button>
+                    </motion.div>
+                </form>
 
                 <div className="flex items-center gap-4">
                     <SignedOut>
                         <SignInButton mode="modal">
-                            <button data-testid="sign-in-button" className={`px-3 py-1 rounded border ${isLight ? "border-gray-400 text-gray-700 hover:bg-gray-100" : "border-white/50 hover:bg-white hover:text-black"} transition duration-300`}>
+                            <button data-testid="sign-in-button" className="px-3 py-1 rounded border border-white/50 hover:bg-white hover:text-black transition duration-300">
                                 Iniciar sesión
                             </button>
                         </SignInButton>
@@ -286,9 +308,7 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                             <UserButton
                                 appearance={{
                                     elements: {
-                                        // Oculta el avatar del trigger para que se vea el overlay
                                         userButtonAvatarBox: profile?.avatar_url ? "opacity-0" : undefined,
-                                        // Usa el avatar del backend como fondo en el popup
                                         userPreviewAvatarBox: profile?.avatar_url
                                             ? {
                                                 backgroundImage: `url('${profile.avatar_url}')`,
@@ -297,7 +317,6 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                                                 borderRadius: "50%",
                                               }
                                             : undefined,
-                                        // Oculta la imagen de Clerk en el popup para que se vea el fondo
                                         userPreviewAvatarImage: profile?.avatar_url ? "opacity-0" : undefined,
                                     },
                                 }}
@@ -351,7 +370,7 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
                         </div>
                     </SignedIn>
                 </div>
-            </ul>
+            </div>
         </div>
     );
 }
