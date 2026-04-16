@@ -6,10 +6,13 @@ import { useAuth } from "@clerk/nextjs";
 import {
   IoStar, IoLocationSharp, IoCompass, IoPricetag, IoSearch,
   IoAdd, IoCheckmark, IoCalendarOutline, IoTimeOutline,
-  IoLibraryOutline, IoLeafOutline, IoFlagOutline, IoWaterOutline,
-  IoMoonOutline, IoGridOutline,
+  IoGrid, IoClose, IoSwapVertical,
+} from "react-icons/io5";
+import {
+  IoLibraryOutline, IoLeafOutline, IoFlagOutline, IoWaterOutline, IoMoonOutline,
 } from "react-icons/io5";
 import type { ItineraryItem, TripDay } from "../types";
+import TimePicker from "./TimePicker";
 
 const POIMap = dynamic(() => import("./POIMap"), { ssr: false });
 
@@ -51,24 +54,35 @@ import { createApiClient } from "@/lib/api";
 // ── Category definitions ──────────────────────────────────────────────────────
 type CategoryId = "todos" | "museos" | "parques" | "monumentos" | "playas" | "vida-nocturna";
 
-const CATEGORIES: { id: CategoryId; label: string; Icon: React.ElementType }[] = [
-  { id: "todos",         label: "Todos",          Icon: IoGridOutline     },
-  { id: "museos",        label: "Museos",          Icon: IoLibraryOutline  },
-  { id: "parques",       label: "Parques",         Icon: IoLeafOutline     },
-  { id: "monumentos",    label: "Monumentos",      Icon: IoFlagOutline     },
-  { id: "playas",        label: "Playas",          Icon: IoWaterOutline    },
-  { id: "vida-nocturna", label: "Vida nocturna",   Icon: IoMoonOutline     },
+const CATEGORIES: { id: CategoryId; label: string; Icon: React.ElementType; color: string }[] = [
+  { id: "todos",         label: "Todos",         Icon: IoGrid,          color: "#6B7280" },
+  { id: "museos",        label: "Museos",         Icon: IoLibraryOutline, color: "#8B5CF6" },
+  { id: "parques",       label: "Parques",        Icon: IoLeafOutline,   color: "#10B981" },
+  { id: "monumentos",    label: "Monumentos",     Icon: IoFlagOutline,   color: "#F59E0B" },
+  { id: "playas",        label: "Playas",         Icon: IoWaterOutline,  color: "#3B82F6" },
+  { id: "vida-nocturna", label: "Vida nocturna",  Icon: IoMoonOutline,   color: "#EC4899" },
 ];
+
+const CATEGORY_PIN_COLORS: Record<CategoryId, string> = {
+  todos:         "#EF4444",
+  museos:        "#8B5CF6",
+  parques:       "#10B981",
+  monumentos:    "#F59E0B",
+  playas:        "#3B82F6",
+  "vida-nocturna": "#EC4899",
+};
 
 function detectCategory(poi: POI): CategoryId {
   const text = `${poi.name} ${poi.description ?? ""}`.toLowerCase();
-  if (/playa|beach|costa|bahía|bay|arena|surf/.test(text))                               return "playas";
-  if (/museo|museum|galería|gallery|arte\b|art\b|exhibición|exposición/.test(text))      return "museos";
-  if (/parque|park|jardín|garden|bosque|naturaleza|reserva|nature/.test(text))           return "parques";
+  if (/playa|beach|costa|bahía|bay|arena|surf/.test(text))                                   return "playas";
+  if (/museo|museum|galería|gallery|arte\b|art\b|exhibición|exposición/.test(text))          return "museos";
+  if (/parque|park|jardín|garden|bosque|naturaleza|reserva|nature/.test(text))               return "parques";
   if (/monumento|monument|memorial|statue|estatua|histórico|historic|ruina|ruin/.test(text)) return "monumentos";
-  if (/bar\b|club|discoteca|nightclub|pub|lounge|nocturna|nightlife|cantina/.test(text)) return "vida-nocturna";
+  if (/bar\b|club|discoteca|nightclub|pub|lounge|nocturna|nightlife|cantina/.test(text))     return "vida-nocturna";
   return "todos";
 }
+
+type SortBy = "rating" | "name";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -79,7 +93,13 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState<CategoryId>("todos");
+  const [activeCategory, setActiveCategory] = useState<CategoryId>(() => {
+    if (typeof window !== "undefined") {
+      return (localStorage.getItem("bv-poi-category") as CategoryId) ?? "todos";
+    }
+    return "todos";
+  });
+  const [sortBy, setSortBy] = useState<SortBy>("rating");
   const [pickerOpenId, setPickerOpenId] = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [detailPickerOpen, setDetailPickerOpen] = useState(false);
@@ -108,12 +128,10 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
   const filtered = useMemo(() => {
     let list = places;
 
-    // Category filter
     if (activeCategory !== "todos") {
       list = list.filter((p) => detectCategory(p) === activeCategory);
     }
 
-    // Search filter
     if (query.trim()) {
       const q = query.toLowerCase();
       list = list.filter(
@@ -124,10 +142,13 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
       );
     }
 
-    return list;
-  }, [places, query, activeCategory]);
+    return [...list].sort((a, b) => {
+      if (sortBy === "rating") return (b.rating ?? 0) - (a.rating ?? 0);
+      if (sortBy === "name")   return a.name.localeCompare(b.name);
+      return 0;
+    });
+  }, [places, query, activeCategory, sortBy]);
 
-  // Count per category for badges
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = { todos: places.length };
     for (const cat of CATEGORIES.slice(1)) {
@@ -135,6 +156,15 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
     }
     return counts;
   }, [places]);
+
+  const pinColorMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of filtered) {
+      const cat = detectCategory(p);
+      map[p.id] = CATEGORY_PIN_COLORS[cat];
+    }
+    return map;
+  }, [filtered]);
 
   const selectedPlace = filtered.find((p) => p.id === selectedId) ?? null;
 
@@ -189,15 +219,30 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
 
   function handleCategoryChange(cat: CategoryId) {
     setActiveCategory(cat);
+    localStorage.setItem("bv-poi-category", cat);
     setSelectedId(null);
     setDetailPickerOpen(false);
   }
 
+  // ── Skeleton ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96 gap-3 text-gray-400">
-        <IoCompass className="text-3xl animate-spin" />
-        <span className="text-sm">Buscando puntos de interés...</span>
+      <div className="px-4 max-w-6xl mx-auto pt-6 pb-8 space-y-4">
+        <div className="h-10 w-48 bg-gray-200 rounded-xl animate-pulse" />
+        <div className="flex gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-8 w-24 bg-gray-200 rounded-full animate-pulse" />
+          ))}
+        </div>
+        <div className="flex gap-4">
+          <div className="flex-1 grid grid-cols-2 xl:grid-cols-3 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
+          <div className="w-72 flex-shrink-0 space-y-3">
+            <div className="h-[240px] bg-gray-200 rounded-2xl animate-pulse" />
+            <div className="h-[320px] bg-gray-200 rounded-2xl animate-pulse" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -211,24 +256,41 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
     );
   }
 
+  const activeCategoryData = CATEGORIES.find((c) => c.id === activeCategory);
+
   return (
     <div className="px-4 max-w-6xl mx-auto pt-6 pb-8 space-y-4">
 
-      {/* Search bar */}
-      <div className="relative max-w-sm">
-        <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar lugar..."
-          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
-        />
+      {/* Search + Sort row */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar lugar..."
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent"
+          />
+        </div>
+
+        {/* Sort dropdown */}
+        <div className="relative flex items-center gap-1.5 border border-gray-200 rounded-xl px-3 py-2 bg-white shadow-sm">
+          <IoSwapVertical className="text-gray-400 text-sm flex-shrink-0" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="text-xs text-gray-600 bg-transparent focus:outline-none cursor-pointer pr-1"
+          >
+            <option value="rating">Mayor rating</option>
+            <option value="name">Nombre A–Z</option>
+          </select>
+        </div>
       </div>
 
       {/* Category filter pills */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {CATEGORIES.map(({ id, label, Icon }) => {
+        {CATEGORIES.map(({ id, label, Icon, color }) => {
           const count = categoryCounts[id] ?? 0;
           const isActive = activeCategory === id;
           return (
@@ -263,7 +325,7 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-300">
               <IoCompass className="text-4xl" />
               <p className="text-sm text-gray-400 text-center">
-                {query ? `Sin resultados para "${query}"` : `No hay lugares en esta categoría`}
+                {query ? `Sin resultados para "${query}"` : "No hay lugares en esta categoría"}
               </p>
               {activeCategory !== "todos" && (
                 <button
@@ -293,8 +355,29 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
           )}
         </div>
 
-        {/* Right column: map + detail panel */}
-        <div className="w-72 flex-shrink-0 sticky top-16 h-[580px] flex flex-col gap-3">
+        {/* Right column: filter badge + map + detail panel */}
+        <div className="w-72 flex-shrink-0 sticky top-16 h-[580px] flex flex-col gap-2">
+
+          {/* Active filter badge */}
+          {activeCategory !== "todos" && activeCategoryData && (
+            <div
+              className="flex-shrink-0 flex items-center justify-between px-2.5 py-1.5 rounded-lg border"
+              style={{
+                backgroundColor: `${activeCategoryData.color}15`,
+                borderColor: `${activeCategoryData.color}40`,
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                <activeCategoryData.Icon className="text-xs" style={{ color: activeCategoryData.color }} />
+                <span className="text-[10px] font-semibold" style={{ color: activeCategoryData.color }}>
+                  {activeCategoryData.label} · {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+              <button onClick={() => handleCategoryChange("todos")} className="text-gray-400 hover:text-gray-600">
+                <IoClose className="text-xs" />
+              </button>
+            </div>
+          )}
 
           {/* Map */}
           <div className="h-[240px] rounded-2xl overflow-hidden shadow-md border border-gray-100 flex-shrink-0">
@@ -303,6 +386,7 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
               selectedId={selectedId}
               onSelectId={(id) => selectPlace(id)}
               center={{ lat: destination.lat, lng: destination.lng }}
+              colorMap={pinColorMap}
             />
           </div>
 
@@ -313,17 +397,12 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
                 {/* Image with overlays */}
                 <div className="relative w-full h-32 overflow-hidden rounded-t-2xl flex-shrink-0">
                   {selectedPlace.photoUrl ? (
-                    <img
-                      src={selectedPlace.photoUrl}
-                      alt={selectedPlace.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={selectedPlace.photoUrl} alt={selectedPlace.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                       <IoCompass className="text-3xl text-gray-300" />
                     </div>
                   )}
-                  {/* Open/Closed badge */}
                   {selectedPlace.isOpenNow != null && (
                     <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full shadow ${
                       selectedPlace.isOpenNow ? "bg-green-500 text-white" : "bg-red-500 text-white"
@@ -331,7 +410,6 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
                       {selectedPlace.isOpenNow ? "Abierto" : "Cerrado"}
                     </span>
                   )}
-                  {/* Rating overlay */}
                   {selectedPlace.rating && (
                     <div className="absolute bottom-2 left-2 flex items-center gap-0.5 bg-black/50 backdrop-blur-sm rounded-full px-2 py-0.5">
                       <IoStar className="text-amber-400 text-[10px]" />
@@ -445,32 +523,24 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
                         </div>
                       </div>
 
-                      {/* Horario de visita — rediseñado */}
+                      {/* Horario de visita — TimePicker */}
                       <div className="bg-white rounded-lg border border-gray-100 p-2.5 space-y-2">
-                        <div className="flex items-center gap-1.5">
-                          <IoTimeOutline className="text-blue-400 text-sm" />
-                          <span className="text-xs font-semibold text-gray-600">Horario de visita</span>
-                          <span className="text-[9px] text-gray-400 ml-auto">opcional</span>
-                        </div>
+                        <p className="text-[10px] font-semibold text-gray-500">
+                          Horario de visita <span className="font-normal text-gray-400">(opcional)</span>
+                        </p>
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-medium text-gray-500 block">Entrada</label>
-                            <input
-                              type="time"
-                              value={addStartTime}
-                              onChange={(e) => setAddStartTime(e.target.value)}
-                              className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-gray-700"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] font-medium text-gray-500 block">Salida</label>
-                            <input
-                              type="time"
-                              value={addEndTime}
-                              onChange={(e) => setAddEndTime(e.target.value)}
-                              className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white text-gray-700"
-                            />
-                          </div>
+                          <TimePicker
+                            label="Entrada"
+                            value={addStartTime}
+                            onChange={setAddStartTime}
+                            placeholder="6:00 AM"
+                          />
+                          <TimePicker
+                            label="Salida"
+                            value={addEndTime}
+                            onChange={setAddEndTime}
+                            placeholder="8:00 PM"
+                          />
                         </div>
                       </div>
 
@@ -506,6 +576,23 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
   );
 }
 
+// ── Skeleton card ─────────────────────────────────────────────────────────────
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
+      <div className="w-full h-28 bg-gray-200" />
+      <div className="p-2.5 space-y-2">
+        <div className="h-2 bg-gray-200 rounded w-1/2" />
+        <div className="h-2.5 bg-gray-200 rounded w-3/4" />
+        <div className="h-2 bg-gray-200 rounded w-full" />
+        <div className="h-2 bg-gray-200 rounded w-2/3" />
+        <div className="h-2 bg-gray-200 rounded w-1/3" />
+      </div>
+    </div>
+  );
+}
+
+// ── POI card ──────────────────────────────────────────────────────────────────
 function POICard({
   poi,
   days,
@@ -534,7 +621,7 @@ function POICard({
           : "border-gray-100 hover:border-gray-200 hover:shadow-md hover:-translate-y-1"
       }`}
     >
-      {/* Add to itinerary button */}
+      {/* Add button */}
       <button
         onClick={(e) => { e.stopPropagation(); onPickerToggle(); }}
         title="Agregar al itinerario"
@@ -583,8 +670,6 @@ function POICard({
             <IoCompass className="text-3xl text-gray-200" />
           </div>
         )}
-
-        {/* Open/Closed badge */}
         {poi.isOpenNow != null && (
           <span className={`absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow ${
             poi.isOpenNow ? "bg-green-500 text-white" : "bg-red-500 text-white"
@@ -592,17 +677,13 @@ function POICard({
             {poi.isOpenNow ? "Abierto" : "Cerrado"}
           </span>
         )}
-
-        {/* Rating badge — bottom left */}
         {poi.rating && (
           <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 bg-black/55 backdrop-blur-sm rounded-full px-1.5 py-0.5">
             <IoStar className="text-amber-400 text-[9px]" />
             <span className="text-white text-[10px] font-bold">{poi.rating.toFixed(1)}</span>
             {poi.ratingCount && (
               <span className="text-white/70 text-[8px]">
-                ({poi.ratingCount > 999
-                  ? `${(poi.ratingCount / 1000).toFixed(1)}k`
-                  : poi.ratingCount})
+                ({poi.ratingCount > 999 ? `${(poi.ratingCount / 1000).toFixed(1)}k` : poi.ratingCount})
               </span>
             )}
           </div>
@@ -616,17 +697,10 @@ function POICard({
             <span className="text-[10px]">{poi.priceLevel}</span>
           </div>
         )}
-
-        <h3 className="font-semibold text-gray-800 text-xs leading-tight line-clamp-1">
-          {poi.name}
-        </h3>
-
+        <h3 className="font-semibold text-gray-800 text-xs leading-tight line-clamp-1">{poi.name}</h3>
         {poi.description && (
-          <p className="text-[10px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">
-            {poi.description}
-          </p>
+          <p className="text-[10px] text-gray-500 mt-1 line-clamp-2 leading-relaxed">{poi.description}</p>
         )}
-
         <div className="flex items-start gap-1 mt-1.5">
           <IoLocationSharp className="text-gray-400 text-[9px] flex-shrink-0 mt-0.5" />
           <p className="text-[9px] text-gray-400 line-clamp-1">{poi.address}</p>

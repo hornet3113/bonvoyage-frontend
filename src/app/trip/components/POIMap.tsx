@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import Map, { Marker, NavigationControl, type MapRef } from "react-map-gl/mapbox";
+// @ts-ignore — CSS side-effect import, no type declarations needed
 import "mapbox-gl/dist/mapbox-gl.css";
 import { IoLocationSharp } from "react-icons/io5";
 
@@ -17,12 +18,13 @@ type Props = {
   selectedId: string | null;
   onSelectId: (id: string) => void;
   center: { lat: number; lng: number };
+  /** Optional hex color per place id — defaults to #EF4444 */
+  colorMap?: Record<string, string>;
 };
 
-export default function POIMap({ places, selectedId, onSelectId, center }: Props) {
+export default function POIMap({ places, selectedId, onSelectId, center, colorMap }: Props) {
   const mapRef = useRef<MapRef>(null);
 
-  
   useEffect(() => {
     if (!selectedId || !mapRef.current) return;
     const poi = places.find((p) => p.id === selectedId);
@@ -50,6 +52,7 @@ export default function POIMap({ places, selectedId, onSelectId, center }: Props
 
       {places.map((poi) => {
         const isSelected = selectedId === poi.id;
+        const color = colorMap?.[poi.id] ?? "#EF4444";
         return (
           <Marker
             key={poi.id}
@@ -65,7 +68,8 @@ export default function POIMap({ places, selectedId, onSelectId, center }: Props
               }`}
             >
               <IoLocationSharp
-                className={`text-3xl ${isSelected ? "text-blue-600" : "text-red-500"}`}
+                className="text-3xl"
+                style={{ color: isSelected ? "#2563EB" : color }}
               />
             </div>
           </Marker>
