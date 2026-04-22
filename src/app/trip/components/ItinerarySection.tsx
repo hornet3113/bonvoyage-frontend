@@ -44,6 +44,7 @@ type EditFields = { start_time?: string; end_time?: string; estimated_cost?: num
 type Props = {
   tripId?: string;
   itinerary: TripItinerary;
+  currency?: string;
   onRemove: (itemId: string, dayNumber: number) => void;
   onReorder?: (dayNumber: number, items: ItineraryItem[]) => void;
   onEdit?: (itemId: string, dayNumber: number, fields: EditFields) => Promise<void>;
@@ -69,7 +70,7 @@ function fmt(n: number) {
 }
 
 // ── Budget ticket (collapsible) ────────────────────────────────────────────────
-function BudgetTicket({ budget }: { budget: Budget }) {
+function BudgetTicket({ budget, currency }: { budget: Budget; currency: string }) {
   const [expanded, setExpanded] = useState(false);
 
   const STATUS: Record<string, { badge: string; label: string; bar: string }> = {
@@ -103,7 +104,7 @@ function BudgetTicket({ budget }: { budget: Budget }) {
           </div>
           <p className="text-xl font-black text-gray-800 leading-tight">
             {fmt(budget.accumulated_cost)}{" "}
-            <span className="text-xs font-normal text-gray-400">USD</span>
+            <span className="text-xs font-normal text-gray-400">{currency}</span>
           </p>
         </div>
         <IoChevronDown
@@ -178,7 +179,7 @@ function BudgetTicket({ budget }: { budget: Budget }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ItinerarySection({
-  tripId, itinerary, onRemove, onReorder, onEdit, onMove,
+  tripId, itinerary, currency = "USD", onRemove, onReorder, onEdit, onMove,
   savedHotel, savedFlight, center, readOnly = false,
 }: Props) {
   const { getToken } = useAuth();
@@ -190,18 +191,18 @@ export default function ItinerarySection({
   // ── Budget ──
   const [budget, setBudget] = useState<Budget | null>(null);
 
-  useEffect(() => {
+  async function refreshBudget() {
     if (!tripId) return;
-    let cancelled = false;
-    async function fetchBudget() {
-      const api = createApiClient(getToken);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const json = await api.get<any>(`/api/v1/trips/${tripId}/ticket`);
-      const data = json?.data ?? json;
-      if (!cancelled && data?.ticket_id) setBudget(data);
-    }
-    fetchBudget().catch(() => {});
-    return () => { cancelled = true; };
+    const api = createApiClient(getToken);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const json = await api.get<any>(`/api/v1/trips/${tripId}/ticket`);
+    const data = json?.data ?? json;
+    if (data?.ticket_id) setBudget(data);
+  }
+
+  useEffect(() => {
+    refreshBudget().catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripId]);
 
   // Edit modal
@@ -264,6 +265,7 @@ export default function ItinerarySection({
     try {
       await onEdit(editingItem.item.itemId ?? editingItem.item.id, editingItem.dayNumber, fields);
       setEditingItem(null);
+      refreshBudget().catch(() => {});
     } catch (err: unknown) {
       setEditError(err instanceof Error ? err.message : "Error al guardar");
     } finally {
@@ -374,7 +376,7 @@ export default function ItinerarySection({
     <div className="flex flex-col gap-3">
 
       {/* Budget ticket */}
-      {budget && <BudgetTicket budget={budget} />}
+      {budget && <BudgetTicket budget={budget} currency={currency} />}
 
       {/* Legend */}
       <div className="flex items-center gap-4 text-[10px] text-gray-500 px-1 flex-wrap">
@@ -706,7 +708,7 @@ export default function ItinerarySection({
               )}
               {editingItem.item.type !== "hotel" && (
                 <div>
-                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Costo estimado (USD)</label>
+                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Costo estimado ({currency})</label>
                   <input type="number" min={0} value={editCost} onChange={(e) => setEditCost(e.target.value)}
                     placeholder="0"
                     className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300" />

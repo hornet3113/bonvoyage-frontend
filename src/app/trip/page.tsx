@@ -73,6 +73,8 @@ function TripPageContent() {
     lat: number | null;
     lng: number | null;
     country: string | null;
+    totalBudget: number | null;
+    currency: string;
   } | null>(null);
 
   const urlLat = parseFloat(searchParams.get("lat") ?? "NaN");
@@ -244,6 +246,8 @@ function TripPageContent() {
         lat: data.destination_lat ?? data.latitude ?? null,
         lng: data.destination_lng ?? data.longitude ?? null,
         country: data.destination_country ?? data.country ?? null,
+        totalBudget: data.total_budget ?? null,
+        currency: data.currency ?? "USD",
       });
     } catch (err: unknown) {
       setTripError(err instanceof Error ? err.message : "Error al cargar el viaje");
@@ -290,8 +294,8 @@ function TripPageContent() {
     setEditName(destination.name ?? "");
     setEditStart(tripMeta?.startDate ?? wizardFlightParams.startDate ?? "");
     setEditEnd(tripMeta?.endDate ?? wizardFlightParams.endDate ?? "");
-    setEditBudget("");
-    setEditCurrency("USD");
+    setEditBudget(tripMeta?.totalBudget != null ? String(tripMeta.totalBudget) : "");
+    setEditCurrency(tripMeta?.currency ?? "USD");
     setEditOpen(true);
   }
 
@@ -308,7 +312,13 @@ function TripPageContent() {
       };
       if (editBudget) body.total_budget = parseFloat(editBudget);
       await api.patch(`/api/v1/trips/${tripId}`, body);
-      setTripMeta((prev) => prev ? { ...prev, startDate: editStart, endDate: editEnd } : prev);
+      setTripMeta((prev) => prev ? {
+        ...prev,
+        startDate: editStart,
+        endDate: editEnd,
+        currency: editCurrency,
+        totalBudget: editBudget ? parseFloat(editBudget) : prev.totalBudget,
+      } : prev);
       setEditOpen(false);
     } catch {
       // silent
@@ -580,6 +590,7 @@ function TripPageContent() {
       <ItinerarySection
         tripId={tripId ?? undefined}
         itinerary={itinerary}
+        currency={tripMeta?.currency ?? "USD"}
         onRemove={removeFromItinerary}
         onReorder={reorderItinerary}
         onEdit={tripStatus === "DRAFT" ? editItineraryItem : undefined}
