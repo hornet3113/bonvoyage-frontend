@@ -1,6 +1,6 @@
 "use client";
 
-import { TripSection } from "../page";
+import type { TripSection } from "@/types/types";
 import { IoAirplane, IoBed, IoCompass, IoRestaurant, IoCalendar } from "react-icons/io5";
 
 type Tab = {
