@@ -69,7 +69,6 @@ export type TripMeta = {
 
 export type TripSection = "vuelos" | "hospedaje" | "puntos" | "restaurantes" | "itinerario";
 
-// ─── Destination / Place ──────────────────────────────────────────────────────
 
 export type Destination = {
   name: string;
@@ -92,7 +91,7 @@ export type PlaceResult = {
   lng: number;
 };
 
-// ─── Saved hotel / flight summaries (trip page sidebar) ───────────────────────
+
 
 export type SavedHotel = {
   name: string;
