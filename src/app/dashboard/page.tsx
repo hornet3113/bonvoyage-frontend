@@ -24,7 +24,6 @@ function DashboardContent() {
   const { getToken } = useAuth();
   const searchParams = useSearchParams();
 
-  // Build initial place from wishlist URL params (if present)
   const fromWishlistParam = searchParams.get("fromWishlist") === "1";
   const initLat = parseFloat(searchParams.get("lat") ?? "NaN");
   const initLng = parseFloat(searchParams.get("lng") ?? "NaN");

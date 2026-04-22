@@ -88,7 +88,7 @@ export default function TripsMapView({ trips }: Props) {
     });
   }, [trips]);
 
-  // Fit map to show all markers when they update
+
   useEffect(() => {
     if (!mapRef.current || markers.length === 0) return;
     if (markers.length === 1) {

@@ -40,7 +40,7 @@ export default function AboutUsSection() {
     <section id="nosotros" className="bg-slate-50 px-6 py-24 md:px-16 lg:px-24">
       <div className="mx-auto max-w-6xl flex flex-col gap-20">
 
-        {/* ── Label + Editorial statement agrupados ── */}
+        
         <motion.div
           className="flex flex-col gap-4"
           initial={{ opacity: 0, y: 30 }}
@@ -67,10 +67,10 @@ export default function AboutUsSection() {
           </h2>
         </motion.div>
 
-        {/* ── Two-column: photo card | text + stats ── */}
+
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:items-stretch">
 
-          {/* Left — destination card */}
+      
           <motion.div
             className="relative overflow-hidden rounded-3xl min-h-[420px]"
             initial={{ opacity: 0, x: -16 }}
@@ -83,21 +83,21 @@ export default function AboutUsSection() {
               alt="Destino"
               className="absolute inset-0 h-full w-full object-cover"
             />
-            {/* gradient overlay */}
+           
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
 
-            {/* Floating badge top */}
+           
             <div className="absolute top-5 left-5 flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 backdrop-blur-sm border border-white/30">
               <IoRocketOutline className="text-white text-sm" />
               <span className="text-[11px] font-semibold text-white uppercase tracking-wider">Bon Voyage</span>
             </div>
 
-            {/* Bottom info */}
+         
             <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col gap-3">
               <p className="text-white font-semibold text-lg leading-snug">
                 Explora el mundo.<br />Planifica sin estrés.
               </p>
-              {/* Mini tags */}
+             
               <div className="flex flex-wrap gap-2">
                 {["Vuelos", "Hoteles", "Restaurantes", "POI"].map((tag) => (
                   <span
@@ -111,7 +111,7 @@ export default function AboutUsSection() {
             </div>
           </motion.div>
 
-          {/* Right — text + stats */}
+       
           <motion.div
             className="flex flex-col justify-between gap-10"
             initial={{ opacity: 0, x: 16 }}

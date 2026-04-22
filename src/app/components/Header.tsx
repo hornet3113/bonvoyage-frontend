@@ -34,7 +34,7 @@ function MobileMenuOverlay({
   onClose: () => void;
   menus: { label: string; href: string }[];
   pathname: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
   profile: any;
 }) {
   if (!open) return null;

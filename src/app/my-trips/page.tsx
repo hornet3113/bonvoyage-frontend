@@ -23,6 +23,8 @@ export default function MyTripsPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [visibleCount, setVisibleCount] = useState(6);
+  const PAGE_SIZE = 6;
 
   useEffect(() => {
     async function load() {
@@ -44,12 +46,12 @@ export default function MyTripsPage() {
     setDeleting((prev) => new Set(prev).add(tripId));
     setConfirmDelete(null);
     const api = createApiClient(getToken);
-    // Optimistic remove
+
     setTrips((prev) => prev.filter((t) => t.trip_id !== tripId));
     try {
       await api.delete(`/api/v1/trips/${tripId}`);
     } catch {
-      // Reload on error to restore the list
+  
       try {
         const data = await api.get<{ trips?: Trip[]; data?: Trip[] } & Trip[]>("/api/v1/trips");
         setTrips(data.trips ?? data.data ?? data ?? []);
@@ -63,14 +65,14 @@ export default function MyTripsPage() {
     if (toggling.has(tripId)) return;
     setToggling((prev) => new Set(prev).add(tripId));
     const api = createApiClient(getToken);
-    // Optimistic update
+ 
     setTrips((prev) =>
       prev.map((t) => (t.trip_id === tripId ? { ...t, is_favorite: !current } : t))
     );
     try {
       await api.patch(`/api/v1/trips/${tripId}`, { is_favorite: !current });
     } catch {
-      // Revert on error
+     
       setTrips((prev) =>
         prev.map((t) => (t.trip_id === tripId ? { ...t, is_favorite: current } : t))
       );
@@ -97,10 +99,10 @@ export default function MyTripsPage() {
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <Header variant="light" />
 
-      {/* Split layout: list left, map right */}
+      {/*lista izquerda, map derecha */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* ── Left: trips list ── */}
+        {/* ─lista de vaijes */}
         <div className="w-full lg:w-[480px] xl:w-[520px] flex-shrink-0 overflow-y-auto px-4 py-6 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-gray-800">Mis viajes</h1>
@@ -121,7 +123,7 @@ export default function MyTripsPage() {
                 <input
                   type="text"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e) => { setSearch(e.target.value); setVisibleCount(6); }}
                   placeholder="Buscar por nombre o destino..."
                   className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent shadow-sm"
                 />
@@ -136,7 +138,7 @@ export default function MyTripsPage() {
                 {Object.keys(STATUS_LABELS).map((s) => (
                   <button
                     key={s}
-                    onClick={() => setStatusFilter(s)}
+                    onClick={() => { setStatusFilter(s); setVisibleCount(6); }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
                       statusFilter === s
                         ? "bg-blue-500 text-white"
@@ -197,7 +199,7 @@ export default function MyTripsPage() {
 
           {!loading && filteredTrips.length > 0 && (
             <div className="space-y-3">
-              {filteredTrips.map((trip) => (
+              {filteredTrips.slice(0, visibleCount).map((trip) => (
                 <TripCard
                   key={trip.trip_id}
                   trip={trip}
@@ -220,11 +222,19 @@ export default function MyTripsPage() {
                   }}
                 />
               ))}
+              {visibleCount < filteredTrips.length && (
+                <button
+                  onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}
+                  className="w-full py-3 rounded-2xl border border-gray-200 bg-white text-sm font-semibold text-gray-500 hover:border-blue-300 hover:text-blue-500 transition-colors"
+                >
+                  Ver más ({filteredTrips.length - visibleCount} restantes)
+                </button>
+              )}
             </div>
           )}
         </div>
 
-        {/* ── Right: world map ── */}
+        {/* ── derecha mapita */}
         <div className="hidden lg:block flex-1 p-4">
           <TripsMapView trips={trips} />
         </div>
@@ -309,7 +319,7 @@ function TripCard({
         }
       </button>
 
-      {/* Delete */}
+      {/* eliminar */}
       {confirmingDelete ? (
         <div className="flex items-center gap-1 flex-shrink-0">
           <span className="text-xs text-gray-500 mr-1">¿Eliminar?</span>
