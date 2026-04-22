@@ -198,7 +198,7 @@ function Header({ variant = "dark", onSearch, useLandingMenus }: Props) {
       if (feature) {
         const [lng, lat] = feature.center;
         if (onSearch) {
-          onSearch({ name: feature.place_name, lng, lat });
+          onSearch({ name: feature.text, lng, lat });
         } else {
           router.push(`/dashboard`);
         }
