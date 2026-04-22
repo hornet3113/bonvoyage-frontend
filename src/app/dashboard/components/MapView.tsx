@@ -3,6 +3,7 @@
 import { useRef, useCallback, useEffect } from "react";
 import Map, { MapMouseEvent, MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { BACKEND } from "@/lib/api";
 
 type SelectedPlace = {
   name: string;
@@ -29,7 +30,7 @@ export default function MapView({ onPlaceSelect, flyTo }: Props) {
   const handleClick = useCallback(
     async (e: MapMouseEvent) => {
       const { lng, lat } = e.lngLat;
-      const res = await fetch(`/api/places?lat=${lat}&lng=${lng}`);
+      const res = await fetch(`${BACKEND}/api/v1/places?lat=${lat}&lng=${lng}`);
       const data = await res.json();
       onPlaceSelect({ name: data.name, country: data.country ?? "", fullName: data.fullName ?? data.name, lng, lat, photoUrl: data.photoUrl });
     },

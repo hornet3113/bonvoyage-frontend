@@ -7,7 +7,7 @@ import { useAuth } from "@clerk/nextjs";
 import Header from "@/app/components/Header";
 import DestinationCard from "./components/DestinationCard";
 import CreateTripWizard from "./components/CreateTripWizard";
-import { createApiClient } from "@/lib/api";
+import { createApiClient, BACKEND } from "@/lib/api";
 
 const MapView = dynamic(() => import("./components/MapView"), { ssr: false });
 
@@ -54,7 +54,7 @@ function DashboardContent() {
 
   const handleSearch = useCallback(async (result: { name: string; lng: number; lat: number }) => {
     setFlyTo({ lng: result.lng, lat: result.lat });
-    const res = await fetch(`/api/places?lat=${result.lat}&lng=${result.lng}`);
+    const res = await fetch(`${BACKEND}/api/v1/places?lat=${result.lat}&lng=${result.lng}`);
     const data = await res.json();
     setSelectedPlace({ name: data.name ?? result.name, country: data.country ?? "", fullName: data.fullName ?? data.name ?? result.name, lng: result.lng, lat: result.lat, photoUrl: data.photoUrl });
     setFromWishlist(false);

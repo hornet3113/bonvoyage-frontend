@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import type { ItineraryItem, TripItinerary, DayPlan, TripSection, TripMeta, TripStatus } from "@/types/types";
 import { useTripTimeTracker } from "@/hooks/useTripTimeTracker";
 import { createApiClient, ApiError } from "@/lib/api";
+import { tripEditSchema } from "@/validators/trip";
 
 function TripPageContent() {
   const searchParams = useSearchParams();
@@ -290,23 +291,31 @@ function TripPageContent() {
 
   async function saveEdit() {
     if (!tripId || savingEdit) return;
+    const parsed = tripEditSchema.safeParse({
+      trip_name: editName,
+      start_date: editStart,
+      end_date: editEnd,
+      currency: editCurrency,
+      total_budget: editBudget ? parseFloat(editBudget) : null,
+    });
+    if (!parsed.success) return;
     setSavingEdit(true);
     const api = createApiClient(getToken);
     try {
       const body: Record<string, unknown> = {
-        trip_name: editName,
-        start_date: editStart,
-        end_date: editEnd,
-        currency: editCurrency,
+        trip_name: parsed.data.trip_name,
+        start_date: parsed.data.start_date,
+        end_date: parsed.data.end_date,
+        currency: parsed.data.currency,
       };
-      if (editBudget) body.total_budget = parseFloat(editBudget);
+      if (parsed.data.total_budget != null) body.total_budget = parsed.data.total_budget;
       await api.patch(`/api/v1/trips/${tripId}`, body);
       setTripMeta((prev) => prev ? {
         ...prev,
-        startDate: editStart,
-        endDate: editEnd,
-        currency: editCurrency,
-        totalBudget: editBudget ? parseFloat(editBudget) : prev.totalBudget,
+        startDate: parsed.data.start_date,
+        endDate: parsed.data.end_date,
+        currency: parsed.data.currency ?? prev.currency,
+        totalBudget: parsed.data.total_budget ?? prev.totalBudget,
       } : prev);
       setEditOpen(false);
     } catch {
