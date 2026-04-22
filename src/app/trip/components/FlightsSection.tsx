@@ -10,6 +10,7 @@ import type { TripDay } from "../types";
 
 import { createApiClient, BACKEND } from "@/lib/api";
 import MaintenanceView from "./MaintenanceView";
+import { SkeletonFlightRow } from "./SkeletonCard";
 
 type TripType = "ida-vuelta" | "solo-ida" | "multidestino";
 
@@ -325,6 +326,12 @@ export default function FlightsSection({
 
       {/* Results */}
       <div className="max-w-5xl mx-auto px-4 space-y-3">
+        {loading && (
+          <>
+            {Array.from({ length: 5 }).map((_, i) => <SkeletonFlightRow key={i} />)}
+          </>
+        )}
+
         {error && (
           <MaintenanceView
             accent="blue"

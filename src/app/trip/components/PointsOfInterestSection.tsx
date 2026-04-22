@@ -13,6 +13,7 @@ import {
 } from "react-icons/io5";
 import type { ItineraryItem, TripDay } from "../types";
 import TimePicker from "./TimePicker";
+import { SkeletonCard } from "./SkeletonCard";
 
 const POIMap = dynamic(() => import("./POIMap"), { ssr: false });
 
@@ -571,22 +572,6 @@ export default function PointsOfInterestSection({ destination, tripDays, onAddTo
             )}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Skeleton card ─────────────────────────────────────────────────────────────
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
-      <div className="w-full h-28 bg-gray-200" />
-      <div className="p-2.5 space-y-2">
-        <div className="h-2 bg-gray-200 rounded w-1/2" />
-        <div className="h-2.5 bg-gray-200 rounded w-3/4" />
-        <div className="h-2 bg-gray-200 rounded w-full" />
-        <div className="h-2 bg-gray-200 rounded w-2/3" />
-        <div className="h-2 bg-gray-200 rounded w-1/3" />
       </div>
     </div>
   );

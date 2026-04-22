@@ -17,6 +17,8 @@ import {
 
 const POIMap = dynamic(() => import("./POIMap"), { ssr: false });
 
+import { SkeletonCard } from "./SkeletonCard";
+
 type Hotel = {
   id: string | null;
   name: string;
@@ -250,6 +252,13 @@ export default function HotelsSection({
           title="Búsqueda de hospedajes no disponible"
           description="Estamos trabajando con nuestro proveedor para restablecer la búsqueda de hoteles. Pronto podrás explorar opciones de hospedaje desde aquí."
         />
+      )}
+
+      {/* Skeleton mientras carga */}
+      {loading && (
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       )}
 
       {/* Estado inicial */}
