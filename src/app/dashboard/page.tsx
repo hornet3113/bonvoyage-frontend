@@ -54,9 +54,28 @@ function DashboardContent() {
 
   const handleSearch = useCallback(async (result: { name: string; lng: number; lat: number }) => {
     setFlyTo({ lng: result.lng, lat: result.lat });
-    const res = await fetch(`${BACKEND}/api/v1/places?lat=${result.lat}&lng=${result.lng}`);
-    const data = await res.json();
-    setSelectedPlace({ name: result.name, country: data.country ?? "", fullName: data.fullName ?? result.name, lng: result.lng, lat: result.lat, photoUrl: data.photoUrl });
+
+    let country = "";
+    let fullName = result.name;
+    let photoUrl: string | null = null;
+
+    try {
+      const res = await fetch(`${BACKEND}/api/v1/places?lat=${result.lat}&lng=${result.lng}`);
+      const data = await res.json();
+      country = data.country ?? "";
+      fullName = data.fullName ?? result.name;
+      photoUrl = data.photoUrl ?? null;
+    } catch { /* usa nombre del buscador como fallback */ }
+
+    if (!photoUrl) {
+      try {
+        const photoRes = await fetch(`/api/photo?q=${encodeURIComponent(result.name)}`);
+        const photoData = await photoRes.json();
+        photoUrl = photoData.photoUrl ?? null;
+      } catch { /* sin foto */ }
+    }
+
+    setSelectedPlace({ name: result.name, country, fullName, lng: result.lng, lat: result.lat, photoUrl });
     setFromWishlist(false);
   }, []);
 

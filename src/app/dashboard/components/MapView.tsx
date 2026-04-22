@@ -30,10 +30,32 @@ export default function MapView({ onPlaceSelect, flyTo }: Props) {
   const handleClick = useCallback(
     async (e: MapMouseEvent) => {
       const { lng, lat } = e.lngLat;
-      const res = await fetch(`${BACKEND}/api/v1/places?lat=${lat}&lng=${lng}`);
-      const data = await res.json();
-      const name = data.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-      onPlaceSelect({ name, country: data.country ?? "", fullName: data.fullName ?? name, lng, lat, photoUrl: data.photoUrl ?? null });
+
+      let name = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      let country = "";
+      let fullName = name;
+      let photoUrl: string | null = null;
+
+      try {
+        const res = await fetch(`${BACKEND}/api/v1/places?lat=${lat}&lng=${lng}`);
+        const data = await res.json();
+        if (data.name) {
+          name = data.name;
+          country = data.country ?? "";
+          fullName = data.fullName ?? name;
+          photoUrl = data.photoUrl ?? null;
+        }
+      } catch { /* usa coordenadas como fallback */ }
+
+      if (!photoUrl) {
+        try {
+          const photoRes = await fetch(`/api/photo?q=${encodeURIComponent(name)}`);
+          const photoData = await photoRes.json();
+          photoUrl = photoData.photoUrl ?? null;
+        } catch { /* sin foto */ }
+      }
+
+      onPlaceSelect({ name, country, fullName, lng, lat, photoUrl });
     },
     [onPlaceSelect]
   );
