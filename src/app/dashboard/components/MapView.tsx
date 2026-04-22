@@ -3,7 +3,6 @@
 import { useRef, useCallback, useEffect } from "react";
 import Map, { MapMouseEvent, MapRef } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { BACKEND } from "@/lib/api";
 
 type SelectedPlace = {
   name: string;
@@ -37,23 +36,25 @@ export default function MapView({ onPlaceSelect, flyTo }: Props) {
       let photoUrl: string | null = null;
 
       try {
-        const res = await fetch(`${BACKEND}/api/v1/places?lat=${lat}&lng=${lng}`);
-        const data = await res.json();
-        if (data.name) {
-          name = data.name;
-          country = data.country ?? "";
-          fullName = data.fullName ?? name;
-          photoUrl = data.photoUrl ?? null;
+        const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+        const geoRes = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}&types=place,locality,neighborhood,region,country`
+        );
+        const geoData = await geoRes.json();
+        const feature = geoData.features?.[0];
+        if (feature) {
+          name = feature.text ?? name;
+          fullName = feature.place_name ?? name;
+          const countryCtx = feature.context?.find((c: { id: string }) => c.id.startsWith("country."));
+          country = countryCtx?.text ?? "";
         }
       } catch { /* usa coordenadas como fallback */ }
 
-      if (!photoUrl) {
-        try {
-          const photoRes = await fetch(`/api/photo?q=${encodeURIComponent(name)}`);
-          const photoData = await photoRes.json();
-          photoUrl = photoData.photoUrl ?? null;
-        } catch { /* sin foto */ }
-      }
+      try {
+        const photoRes = await fetch(`/api/photo?q=${encodeURIComponent(name)}`);
+        const photoData = await photoRes.json();
+        photoUrl = photoData.photoUrl ?? null;
+      } catch { /* sin foto */ }
 
       onPlaceSelect({ name, country, fullName, lng, lat, photoUrl });
     },
