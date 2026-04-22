@@ -323,13 +323,31 @@ export default function FlightsSection({
         </div>
       </div>
 
-      {/* Área de resultados — en mantenimiento */}
-      <div className="max-w-5xl mx-auto px-4">
-        <MaintenanceView
-          accent="blue"
-          title="Búsqueda de vuelos no disponible"
-          description="Estamos trabajando con nuestro proveedor para restablecer la búsqueda de vuelos. Pronto podrás explorar y comparar vuelos desde aquí."
-        />
+      {/* Results */}
+      <div className="max-w-5xl mx-auto px-4 space-y-3">
+        {error && (
+          <MaintenanceView
+            accent="blue"
+            title="Búsqueda de vuelos no disponible"
+            description="Estamos trabajando con nuestro proveedor para restablecer la búsqueda de vuelos. Pronto podrás explorar y comparar vuelos desde aquí."
+          />
+        )}
+
+        {searched && !loading && vuelos.length === 0 && !error && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
+            <IoAirplane className="text-5xl text-blue-200 mx-auto mb-4" />
+            <p className="text-gray-500 text-sm">No se encontraron vuelos para esa ruta y fechas.</p>
+          </div>
+        )}
+
+        {vuelos.map((vuelo, i) => (
+          <FlightCard
+            key={vuelo.id ?? i}
+            vuelo={vuelo}
+            tripDays={tripDays}
+            onSaveToDay={tripId ? handleSaveFlight : undefined}
+          />
+        ))}
       </div>
     </div>
   );

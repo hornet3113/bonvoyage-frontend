@@ -211,6 +211,7 @@ export default function ItinerarySection({
   const [editCost, setEditCost] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Move modal
   const [movingItem, setMovingItem] = useState<{ item: ItineraryItem; fromDayNumber: number } | null>(null);
@@ -254,6 +255,7 @@ export default function ItinerarySection({
   async function handleSaveEdit() {
     if (!editingItem || !onEdit) return;
     setEditSaving(true);
+    setEditError(null);
     const fields: EditFields = {};
     if (editStartTime) fields.start_time = editStartTime.slice(0, 5);
     if (editEndTime) fields.end_time = editEndTime.slice(0, 5);
@@ -262,6 +264,8 @@ export default function ItinerarySection({
     try {
       await onEdit(editingItem.item.itemId ?? editingItem.item.id, editingItem.dayNumber, fields);
       setEditingItem(null);
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : "Error al guardar");
     } finally {
       setEditSaving(false);
     }
@@ -715,6 +719,9 @@ export default function ItinerarySection({
                   className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-300" />
               </div>
             </div>
+            {editError && (
+              <p className="px-5 pb-2 text-xs text-red-500">{editError}</p>
+            )}
             <div className="flex gap-2 px-5 pb-5">
               <button onClick={() => setEditingItem(null)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 text-sm font-semibold">

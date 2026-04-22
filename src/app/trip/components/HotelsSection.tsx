@@ -243,12 +243,96 @@ export default function HotelsSection({
         </div>
       </form>
 
-      {/* Área de resultados — en mantenimiento */}
-      <MaintenanceView
-        accent="purple"
-        title="Búsqueda de hospedajes no disponible"
-        description="Estamos trabajando con nuestro proveedor para restablecer la búsqueda de hoteles. Pronto podrás explorar opciones de hospedaje desde aquí."
-      />
+      {/* Error — mantenimiento */}
+      {error && (
+        <MaintenanceView
+          accent="purple"
+          title="Búsqueda de hospedajes no disponible"
+          description="Estamos trabajando con nuestro proveedor para restablecer la búsqueda de hoteles. Pronto podrás explorar opciones de hospedaje desde aquí."
+        />
+      )}
+
+      {/* Estado inicial */}
+      {!searched && !loading && !error && (
+        <div className="flex flex-col items-center justify-center h-60 gap-3 text-gray-400">
+          <IoBed className="text-5xl text-gray-200" />
+          <p className="text-sm">Ingresa las fechas para buscar hospedajes en {destination.name}.</p>
+        </div>
+      )}
+
+      {/* Sin resultados */}
+      {searched && !loading && hotels.length === 0 && !error && (
+        <div className="flex flex-col items-center justify-center h-60 gap-3 text-gray-400">
+          <IoBed className="text-5xl text-gray-200" />
+          <p className="text-sm">No se encontraron hoteles para esas fechas.</p>
+        </div>
+      )}
+
+      {/* Resultados */}
+      {hotels.length > 0 && (
+        <div className="flex gap-4 items-start">
+          {/* Lista */}
+          <div className="flex-1 overflow-y-auto max-h-[540px] pr-1">
+            <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+              {hotels.map((hotel, i) => {
+                const id = hotel.id ?? `hotel-${i}`;
+                return (
+                  <HotelCard
+                    key={id}
+                    hotel={hotel}
+                    selected={selectedId === id}
+                    onClick={() => setSelectedId(id)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sidebar: mapa + detalle */}
+          <div className="w-72 flex-shrink-0 sticky top-16 h-[540px] flex flex-col gap-3">
+            {/* Mapa */}
+            <div className="h-[220px] rounded-2xl overflow-hidden shadow-md border border-gray-100 flex-shrink-0">
+              {mapPlaces.length > 0 ? (
+                <POIMap
+                  places={mapPlaces}
+                  selectedId={selectedId}
+                  onSelectId={setSelectedId}
+                  center={{ lat: destination.lat, lng: destination.lng }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                  <IoLocationSharp className="text-3xl text-gray-200" />
+                </div>
+              )}
+            </div>
+
+            {/* Panel detalle */}
+            <div className="flex-1 overflow-y-auto bg-white rounded-2xl border border-gray-100 shadow-sm min-h-0">
+              {selectedHotel ? (
+                <HotelDetailPanel
+                  hotel={selectedHotel}
+                  selectedId={selectedId}
+                  tripId={tripId}
+                  tripDays={tripDays}
+                  checkIn={checkIn}
+                  checkOut={checkOut}
+                  saving={saving}
+                  savedId={savedId}
+                  getMatchingDays={getMatchingDays}
+                  onSave={handleSaveToItinerary}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-2 p-4">
+                  <IoBed className="text-3xl text-gray-200" />
+                  <p className="text-xs text-center text-gray-400">
+                    Selecciona un hotel para ver sus detalles
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -304,6 +388,113 @@ function HotelCard({
         <h3 className="font-semibold text-gray-800 text-xs leading-tight line-clamp-2">
           {hotel.name}
         </h3>
+      </div>
+    </div>
+  );
+}
+
+function HotelDetailPanel({
+  hotel,
+  tripId,
+  checkIn,
+  checkOut,
+  saving,
+  savedId,
+  getMatchingDays,
+  onSave,
+}: {
+  hotel: Hotel;
+  selectedId: string | null;
+  tripId?: string;
+  tripDays: TripDay[];
+  checkIn: string;
+  checkOut: string;
+  saving: boolean;
+  savedId: string | null;
+  getMatchingDays: () => TripDay[];
+  onSave: () => Promise<void>;
+}) {
+  const isSaved = savedId !== null && (savedId === hotel.id || savedId === hotel.name);
+  const matchingDays = getMatchingDays();
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Image */}
+      <div className="w-full h-32 bg-gray-100 flex-shrink-0 overflow-hidden">
+        {hotel.imageUrl ? (
+          <img src={hotel.imageUrl} alt={hotel.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-50">
+            <IoBed className="text-4xl text-gray-200" />
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
+        {/* Rating + Price */}
+        <div className="flex items-center justify-between">
+          {hotel.rating && hotel.rating !== "N/A" ? (
+            <div className="flex items-center gap-1">
+              <IoStar className="text-amber-400 text-xs" />
+              <span className="text-xs font-semibold text-gray-700">{hotel.rating}</span>
+            </div>
+          ) : <span />}
+          {hotel.price && hotel.price !== "Precio no disponible" && (
+            <div className="flex items-center gap-1 text-blue-500">
+              <IoPricetag className="text-xs" />
+              <span className="text-xs font-semibold">{hotel.price}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Name */}
+        <h3 className="font-bold text-gray-800 text-sm leading-tight">{hotel.name}</h3>
+
+        {/* Dates */}
+        <div className="flex items-center gap-1 text-[11px] text-gray-400">
+          <IoCalendarOutline className="text-xs" />
+          <span>{checkIn}</span>
+          <span>→</span>
+          <span>{checkOut}</span>
+        </div>
+
+        {/* Coordinates */}
+        {hotel.latitude && hotel.longitude && (
+          <div className="flex items-center gap-1 text-[11px] text-gray-400">
+            <IoLocationSharp className="text-xs" />
+            <span>{hotel.latitude.toFixed(4)}, {hotel.longitude.toFixed(4)}</span>
+          </div>
+        )}
+
+        {/* Matching days */}
+        {matchingDays.length > 0 && (
+          <div className="text-[11px] text-gray-500">
+            Cubre {matchingDays.length === 1
+              ? `el día ${matchingDays[0].dayNumber}`
+              : `los días ${matchingDays[0].dayNumber}–${matchingDays[matchingDays.length - 1].dayNumber}`}
+          </div>
+        )}
+
+        {/* Save button */}
+        {tripId && (
+          <button
+            onClick={onSave}
+            disabled={saving || isSaved}
+            className={`mt-auto flex items-center justify-center gap-1.5 w-full py-2 rounded-xl text-xs font-semibold transition-colors ${
+              isSaved
+                ? "bg-green-50 text-green-600 border border-green-200 cursor-default"
+                : "bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white"
+            }`}
+          >
+            {isSaved ? (
+              <><IoCheckmark className="text-sm" /> Guardado</>
+            ) : saving ? (
+              <><IoAdd className="text-sm animate-spin" /> Guardando...</>
+            ) : (
+              <><IoAdd className="text-sm" /> Agregar al itinerario</>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
