@@ -56,7 +56,7 @@ function DashboardContent() {
     setFlyTo({ lng: result.lng, lat: result.lat });
     const res = await fetch(`${BACKEND}/api/v1/places?lat=${result.lat}&lng=${result.lng}`);
     const data = await res.json();
-    setSelectedPlace({ name: data.name ?? result.name, country: data.country ?? "", fullName: data.fullName ?? data.name ?? result.name, lng: result.lng, lat: result.lat, photoUrl: data.photoUrl });
+    setSelectedPlace({ name: result.name, country: data.country ?? "", fullName: data.fullName ?? result.name, lng: result.lng, lat: result.lat, photoUrl: data.photoUrl });
     setFromWishlist(false);
   }, []);
 

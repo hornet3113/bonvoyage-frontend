@@ -32,7 +32,8 @@ export default function MapView({ onPlaceSelect, flyTo }: Props) {
       const { lng, lat } = e.lngLat;
       const res = await fetch(`${BACKEND}/api/v1/places?lat=${lat}&lng=${lng}`);
       const data = await res.json();
-      onPlaceSelect({ name: data.name, country: data.country ?? "", fullName: data.fullName ?? data.name, lng, lat, photoUrl: data.photoUrl });
+      const name = data.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      onPlaceSelect({ name, country: data.country ?? "", fullName: data.fullName ?? name, lng, lat, photoUrl: data.photoUrl ?? null });
     },
     [onPlaceSelect]
   );
