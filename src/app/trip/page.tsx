@@ -12,11 +12,9 @@ import RestaurantsSection from "./components/RestaurantsSection";
 import ItinerarySection from "./components/ItinerarySection";
 import { IoHeart, IoHeartOutline, IoCheckmarkCircle, IoCloseCircle, IoTrophy, IoEllipsisHorizontalCircle, IoTrashOutline, IoPencilOutline, IoClose, IoWallet } from "react-icons/io5";
 import { useRouter } from "next/navigation";
-import type { ItineraryItem, TripItinerary, DayPlan } from "./types";
+import type { ItineraryItem, TripItinerary, DayPlan, TripSection, TripMeta, TripStatus } from "@/types/types";
 import { useTripTimeTracker } from "@/hooks/useTripTimeTracker";
 import { createApiClient, ApiError } from "@/lib/api";
-
-export type TripSection = "vuelos" | "hospedaje" | "puntos" | "restaurantes" | "itinerario";
 
 function TripPageContent() {
   const searchParams = useSearchParams();
@@ -52,7 +50,7 @@ function TripPageContent() {
   const [tripError, setTripError] = useState<string | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const togglingFav = useRef(false);
-  const [tripStatus, setTripStatus] = useState<"DRAFT" | "CONFIRMED" | "COMPLETED" | "CANCELLED">("DRAFT");
+  const [tripStatus, setTripStatus] = useState<TripStatus>("DRAFT");
   const [changingStatus, setChangingStatus] = useState(false);
 
   // Mide el tiempo activo de planificación (solo cuando status === DRAFT)
@@ -66,16 +64,7 @@ function TripPageContent() {
   const [editBudget, setEditBudget] = useState("");
   const [editCurrency, setEditCurrency] = useState("USD");
   const [savingEdit, setSavingEdit] = useState(false);
-  const [tripMeta, setTripMeta] = useState<{
-    startDate: string;
-    endDate: string;
-    photoUrl: string | null;
-    lat: number | null;
-    lng: number | null;
-    country: string | null;
-    totalBudget: number | null;
-    currency: string;
-  } | null>(null);
+  const [tripMeta, setTripMeta] = useState<TripMeta | null>(null);
 
   const urlLat = parseFloat(searchParams.get("lat") ?? "NaN");
   const urlLng = parseFloat(searchParams.get("lng") ?? "NaN");

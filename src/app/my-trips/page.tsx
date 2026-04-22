@@ -8,22 +8,9 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import Header from "@/app/components/Header";
 import { createApiClient } from "@/lib/api";
+import type { Trip } from "@/types/types";
 
 const TripsMapView = dynamic(() => import("./components/TripsMapView"), { ssr: false });
-
-type Trip = {
-  trip_id: string;
-  trip_name: string;
-  start_date: string;
-  end_date: string;
-  status: string;
-  is_favorite: boolean;
-  destination_name?: string;
-  destination_city?: string;
-  destination_image?: string;
-  total_days?: number;
-  total_items?: number;
-};
 
 export default function MyTripsPage() {
   const { getToken } = useAuth();
